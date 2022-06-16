@@ -35,7 +35,9 @@ void FMineToolEditor::StartupModule ()
         MenuExtender = MakeShareable (new FExtender);
         // Make MenuExtender Builder Callback
         auto &&MenuBarExtensionDelegate = 
-            FMenuBarExtensionDelegate::CreateRaw (this, &FMineToolEditor::MakePulldownMenu);
+            FMenuBarExtensionDelegate::CreateRaw (
+                this, &FMineToolEditor::MakePulldownMenu
+            );
         // Init MenuExtender Object
         MenuExtender->AddMenuBarExtension (
             "Window", EExtensionHook::After,
@@ -115,7 +117,7 @@ void FMineToolEditor::ShutdownModule ()
 /* Main */
 
 TSharedRef<FWorkspaceItem> FMineToolEditor::MenuRoot = 
-    FWorkspaceItem::NewGroup (FText::FromString ("Menu Root"));
+    FWorkspaceItem::NewGroup (FText::FromString ("Mine Menu Root"));
 
 
 void FMineToolEditor::AddMenuExtension (
@@ -129,29 +131,34 @@ void FMineToolEditor::AddMenuExtension (
 
 void FMineToolEditor::MakePulldownMenu (FMenuBarBuilder &menuBuilder)
 {
+    auto MenuDelegate = FNewMenuDelegate::CreateRaw (
+        this, &FMineToolEditor::FillPulldownMenu
+    );
+
     menuBuilder.AddPullDownMenu (
         FText::FromString ("MineToolMenu"),
         FText::FromString ("Open the MineToolMenu To Extended Button"),
-        FNewMenuDelegate::CreateRaw (
-            this, &FMineToolEditor::FillPulldownMenu),
-            "MineToolMenu",
-            FName (TEXT ("MineToolMenu"))
+        MenuDelegate,
+        "MineToolMenu",
+        FName (TEXT ("MineToolMenu"))
     );
 }
 
 void FMineToolEditor::FillPulldownMenu (FMenuBuilder &menuBuilder)
 {
-    // just a frame for tools to fill in
+    // just a frame for tools to fill in Section_1
+    
     menuBuilder.BeginSection ("MineToolMenu", FText::FromString ("Mine Cpp Menu"));
     menuBuilder.AddMenuSeparator (FName ("Section_1"));
     menuBuilder.EndSection ();
 
-    //
+    // just a frame for tools to fill in Section_2
     menuBuilder.BeginSection ("MineToolMenu", FText::FromString ("Mine Tab Menu"));
     menuBuilder.AddMenuSeparator (FName ("Section_2"));
     menuBuilder.EndSection ();
 
-    GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, TEXT ("从MineToolMenu菜单弹出"));
+    FText TempConsoleString = LOCTEXT ("LogUserOutMenu", "Pop From MineToolMenu");
+    GEngine->AddOnScreenDebugMessage (-1, 2.0f, FColor::Blue, TempConsoleString.ToString());
 
 }
 
