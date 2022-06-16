@@ -1,0 +1,18 @@
+﻿#pragma once
+#ifdef CURRENT_CUSTOM_MODULE_NAME
+#undef CURRENT_CUSTOM_MODULE_NAME
+#endif
+#ifndef CURRENT_CUSTOM_MODULE_NAME
+#define CURRENT_CUSTOM_MODULE_NAME "MineCustomToolEditor"
+#endif
+
+
+#ifdef CURRENT_CUSTOM_MODULE_API
+#undef CURRENT_CUSTOM_MODULE_API
+#endif
+#ifndef CURRENT_CUSTOM_MODULE_API
+#define CURRENT_CUSTOM_MODULE_API MINECUSTOMTOOLEDITOR_API
+#endif
+
+// Declare General Log Category, header file .h
+DECLARE_LOG_CATEGORY_EXTERN (LogMineCustomToolEditor, Log, All);
