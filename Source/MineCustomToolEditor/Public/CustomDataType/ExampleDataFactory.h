@@ -1,6 +1,6 @@
 ﻿#pragma once
+#include "MineMouduleDefine.h"
 #include "UnrealEd.h"
-#include "MineCustomToolEditor.h"
 #include "CustomDataType/ExampleData.h"
 #include "ExampleDataFactory.generated.h"
 
@@ -17,4 +17,21 @@ public:
         UObject *Context,
         FFeedbackContext *Warn
     ) override;
+
+    virtual UObject *FactoryCreateText (
+        UClass *InClass,
+        UObject *InParent,
+        FName InName,
+        EObjectFlags Flags,
+        UObject *Context, 
+        const TCHAR *Type, 
+        const TCHAR *&Buffer, 
+        const TCHAR *BufferEnd, 
+        FFeedbackContext *Warn
+    ) override;
+
+    virtual bool FactoryCanImport (const FString &Filename) override;
+
+    // helper function
+    static void MakeExampleDataFromText (class UExampleData *Data, const TCHAR *&Buffer, const TCHAR *BufferEnd);
 };

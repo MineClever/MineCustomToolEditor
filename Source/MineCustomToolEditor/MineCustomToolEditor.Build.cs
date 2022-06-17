@@ -7,8 +7,11 @@ public class MineCustomToolEditor : ModuleRules
 
 	public MineCustomToolEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
-        this.bEnableExceptions = true;
+		// this.bEnableExceptions = true;
+        OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
 		
 		PublicIncludePaths.AddRange(
 			new string[] {

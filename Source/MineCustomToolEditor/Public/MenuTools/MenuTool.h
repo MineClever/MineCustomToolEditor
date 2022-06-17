@@ -1,5 +1,6 @@
 ﻿
 #pragma once
+#include "MineMouduleDefine.h"
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 
 class MenuTool : public IMineCustomToolModuleListenerInterface, public TSharedFromThis<MenuTool>

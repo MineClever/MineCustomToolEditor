@@ -1,7 +1,7 @@
 ﻿#include "MineCustomToolEditor.h"
 #include "MenuTools/MenuTool.h"
 #include "TabTools/TabTool.h"
-
+#include "AssetMenuTools/StaticMeshMenuActionsListener.h"
 
 IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -18,6 +18,8 @@ void FMineToolEditor::AddModuleListeners ()
     ModuleListeners.Emplace (MakeShareable(new MenuTool));
     // Add Custom Panel
     ModuleListeners.Emplace (MakeShareable (new TabTool));
+    // Add StaticMesh ToolMenu
+    ModuleListeners.Emplace (MakeShareable (new StaticMeshMenuActionsListener));
 }
 
 void FMineToolEditor::StartupModule ()
@@ -35,9 +37,7 @@ void FMineToolEditor::StartupModule ()
         MenuExtender = MakeShareable (new FExtender);
         // Make MenuExtender Builder Callback
         auto &&MenuBarExtensionDelegate = 
-            FMenuBarExtensionDelegate::CreateRaw (
-                this, &FMineToolEditor::MakePulldownMenu
-            );
+            FMenuBarExtensionDelegate::CreateRaw (this, &FMineToolEditor::MakePulldownMenu);
         // Init MenuExtender Object
         MenuExtender->AddMenuBarExtension (
             "Window", EExtensionHook::After,
@@ -70,8 +70,8 @@ void FMineToolEditor::StartupModule ()
         // add custom category
         EAssetTypeCategories::Type ExampleCategory = 
             AssetTools.RegisterAdvancedAssetCategory (
-                FName (TEXT ("Example")),
-                FText::FromString ("Example")
+                FName (TEXT ("MineExampleData")),
+                FText::FromString ("MineExampleData")
             );
         // register our custom asset with example category
         TSharedPtr<IAssetTypeActions> Action = MakeShareable (new FExampleDataTypeActions (ExampleCategory));
@@ -117,7 +117,7 @@ void FMineToolEditor::ShutdownModule ()
 /* Main */
 
 TSharedRef<FWorkspaceItem> FMineToolEditor::MenuRoot = 
-    FWorkspaceItem::NewGroup (FText::FromString ("Mine Menu Root"));
+    FWorkspaceItem::NewGroup (FText::FromString ("Menu Root"));
 
 
 void FMineToolEditor::AddMenuExtension (
@@ -131,34 +131,29 @@ void FMineToolEditor::AddMenuExtension (
 
 void FMineToolEditor::MakePulldownMenu (FMenuBarBuilder &menuBuilder)
 {
-    auto MenuDelegate = FNewMenuDelegate::CreateRaw (
-        this, &FMineToolEditor::FillPulldownMenu
-    );
-
     menuBuilder.AddPullDownMenu (
         FText::FromString ("MineToolMenu"),
         FText::FromString ("Open the MineToolMenu To Extended Button"),
-        MenuDelegate,
-        "MineToolMenu",
-        FName (TEXT ("MineToolMenu"))
+        FNewMenuDelegate::CreateRaw (
+            this, &FMineToolEditor::FillPulldownMenu),
+            "MineToolMenu",
+            FName (TEXT ("MineToolMenu"))
     );
 }
 
 void FMineToolEditor::FillPulldownMenu (FMenuBuilder &menuBuilder)
 {
-    // just a frame for tools to fill in Section_1
-    
+    // just a frame for tools to fill in
     menuBuilder.BeginSection ("MineToolMenu", FText::FromString ("Mine Cpp Menu"));
     menuBuilder.AddMenuSeparator (FName ("Section_1"));
     menuBuilder.EndSection ();
 
-    // just a frame for tools to fill in Section_2
+    //
     menuBuilder.BeginSection ("MineToolMenu", FText::FromString ("Mine Tab Menu"));
     menuBuilder.AddMenuSeparator (FName ("Section_2"));
     menuBuilder.EndSection ();
 
-    FText TempConsoleString = LOCTEXT ("LogUserOutMenu", "Pop From MineToolMenu");
-    GEngine->AddOnScreenDebugMessage (-1, 2.0f, FColor::Blue, TempConsoleString.ToString());
+    GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, TEXT ("从MineToolMenu菜单弹出"));
 
 }
 

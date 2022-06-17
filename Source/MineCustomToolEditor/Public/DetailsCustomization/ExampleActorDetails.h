@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "IDetailCustomization.h"
-
+#include "DetailsCustomization/ExampleActor.h"
+#include "MineCustomToolEditor.h"
 class AExampleActor;
 
 /*

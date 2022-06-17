@@ -16,3 +16,12 @@
 
 // Declare General Log Category, header file .h
 DECLARE_LOG_CATEGORY_EXTERN (LogMineCustomToolEditor, Log, All);
+
+// Define If load example ?
+#define MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
+#define MINE_EDITOR_LOAD_EXAMPLE_ACTOR
+
+#ifdef MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
+    #define MINE_EDITOR_CUSTOM_DATA_CAN_REIMPORT
+    #define MINE_EDITOR_CUSTOM_DATA_CAN_NEW
+#endif

@@ -7,17 +7,14 @@
 #include "Editor/PropertyEditor/Public/PropertyEditing.h"
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 
-
-
 // Ref to : https://lxjk.github.io/2019/10/01/How-to-Make-Tools-in-U-E.html
 
-#define MINE_EDITOR_LOAD_EXAMPLE_ACTOR
 #ifdef MINE_EDITOR_LOAD_EXAMPLE_ACTOR
     #include "DetailsCustomization/ExampleActor.h"
     #include "DetailsCustomization/ExampleActorDetails.h"
 #endif
 
-#define MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
+
 #ifdef MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
     #include "CustomDataType/ExampleDataTypeActions.h"
 #endif

@@ -74,7 +74,7 @@ void MenuTool::MakeCppMenuEntry (FMenuBuilder &menuBuilder)
     );
 
     /* Add Tag Widget */
-    TSharedRef<SWidget> AddTagWidget = {
+    TSharedRef<SWidget> AddTagWidget =
         SNew (SHorizontalBox)
         + SHorizontalBox::Slot ()
         .AutoWidth ()
@@ -93,11 +93,9 @@ void MenuTool::MakeCppMenuEntry (FMenuBuilder &menuBuilder)
             SNew (SButton)
             .Text (FText::FromString ("TagOnActor"))
             .OnClicked (this, &MenuTool::AddTag)
-        ]
-    };
+        ];
 
     menuBuilder.AddWidget (AddTagWidget, FText::FromString ("+"));
-
 
 }
 
@@ -122,6 +120,8 @@ void MenuTool::MakeSubMenu (FMenuBuilder &menuBuilder)
     menuBuilder.AddMenuEntry (ToolCommands.MenuCommand2);
     menuBuilder.AddMenuEntry (ToolCommands.MenuCommand3);
 }
+
+
 
 FReply MenuTool::AddTag ()
 {
@@ -150,6 +150,7 @@ void MenuTool::OnTagToAddTextCommitted (const FText &InText, ETextCommit::Type C
     TagToAdd = FName (*str.TrimEnd ());
 }
 
+
 /* Add to Menu Section When loading Module */
 void MenuTool::OnStartupModule ()
 {
@@ -160,11 +161,11 @@ void MenuTool::OnStartupModule ()
 
     this->MapCommands ();
 
-    /* Get Current Editor module instance */
-    auto &&MineToolEditor = FMineToolEditor::Get ();
+    /* Get Menu Section Tool Class instance */
+    auto &&ToolMenu = FMineToolEditor::Get ();
 
     /* Add all Action into Menu Section */
-    MineToolEditor.AddMenuExtension (
+    ToolMenu.AddMenuExtension (
         FMenuExtensionDelegate::CreateRaw (this, &MenuTool::MakeCppMenuEntry),
         FName ("Section_1"),
         CommandList);
