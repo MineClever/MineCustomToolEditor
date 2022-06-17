@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Unreal Intermediate
+/Intermediate
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
