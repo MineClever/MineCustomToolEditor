@@ -61,7 +61,7 @@ public:
 			const TArray<FAssetData> &SelectedAssets
 		)
 	{
-		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("On StaticMesh Asset!"));
+		// UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("On StaticMesh Asset!"));
 		TSharedRef<FExtender> Extender (new FExtender ());
 
 		// Run thru the assets to determine if any meet our criteria
@@ -72,7 +72,7 @@ public:
 		}
 
 		if (bCurrentType) {
-			// Add the sprite actions sub-menu extender
+			// Add the Static actions sub-menu extender
 				Extender->AddMenuExtension (
 					"GetAssetActions",
 					EExtensionHook::After,
@@ -184,8 +184,9 @@ void StaticMeshMenuActionsListener::OnShutdownModule()
 
 void StaticMeshMenuActionsListener::InstallHooks ()
 {
-	TSharedPtr<FMineContentBrowserExtensions_UStaticMesh> CB_Extension_UStaticMesh =
-		MakeShareable (new FMineContentBrowserExtensions_UStaticMesh);
+	//TSharedPtr<FMineContentBrowserExtensions_UStaticMesh> CB_Extension_UStaticMesh =
+	//	MakeShareable (new FMineContentBrowserExtensions_UStaticMesh);
+
 	UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install UStaticMesh Asset Menu Hook"));
 	// Declare Delegate 
 	ContentBrowserExtenderDelegate =

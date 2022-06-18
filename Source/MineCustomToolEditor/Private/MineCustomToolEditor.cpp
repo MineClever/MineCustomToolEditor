@@ -47,7 +47,6 @@ void FMineToolEditor::StartupModule ()
         /* 4. Add Extender to Extension Manager */
         LevelEditorMenuExtensibilityManager->AddExtender (MenuExtender);
 
-
     }
 
 #ifdef MINE_EDITOR_LOAD_EXAMPLE_ACTOR
@@ -156,5 +155,7 @@ void FMineToolEditor::FillPulldownMenu (FMenuBuilder &menuBuilder)
     GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, TEXT ("从MineToolMenu菜单弹出"));
 
 }
+
+
 
 #undef LOCTEXT_NAMESPACE
