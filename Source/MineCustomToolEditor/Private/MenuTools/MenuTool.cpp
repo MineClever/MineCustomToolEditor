@@ -162,10 +162,10 @@ void MenuTool::OnStartupModule ()
     this->MapCommands ();
 
     /* Get Menu Section Tool Class instance */
-    auto &&ToolMenu = FMineToolEditor::Get ();
+    auto &&MineToolEditor = FMineToolEditor::Get ();
 
     /* Add all Action into Menu Section */
-    ToolMenu.AddMenuExtension (
+    MineToolEditor.AddMenuExtension (
         FMenuExtensionDelegate::CreateRaw (this, &MenuTool::MakeCppMenuEntry),
         FName ("Section_1"),
         CommandList);

@@ -1,86 +1,50 @@
 #include "AssetMenuTools/StaticMeshMenuActionsListener.h"
-#include "IAssetTools.h"
-#include "AssetToolsModule.h"
-#include "Engine/StaticMesh.h"
+#include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
 #define LOCTEXT_NAMESPACE "StaticMeshMenuActionsListener"
 
-//////////////////////////////////////////////////////////////////////////
-// FContentBrowserSelectedAssetExtensionBase
 
-class FContentBrowserSelectedAssetExtensionBase
-{
-public:
-	TArray<struct FAssetData> SelectedAssets;
-
-public:
-	virtual void Execute () {}
-	virtual ~FContentBrowserSelectedAssetExtensionBase () {}
-};
 
 //////////////////////////////////////////////////////////////////////////
-// FAssetsProcessorFormSelectionBase
-template<class TAsset>
-class FAssetsProcessorFormSelectionBase : public FContentBrowserSelectedAssetExtensionBase
+// TAssetsProcessorFormSelection_UStaticMesh
+
+class FAssetsProcessorFormSelection_UStaticMesh_PrintName : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
 {
 public:
-	bool bSpecificAssetType;
 
-	FAssetsProcessorFormSelectionBase (): bSpecificAssetType (false)
+	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
 	{
-	}
-
-	virtual void ProcessAssets (TArray<TAsset *> &Meshes)
-	{
-	}
-
-	virtual void Execute () override
-	{
-		// Filter for specific type assets
-		TArray<TAsset *> Assets;
-		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
-			const FAssetData &AssetData = *AssetIt;
-			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
-				Assets.Add (Asset);
-			}
-		}
-
-		ProcessAssets (Assets);
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
-// FAssetsProcessorFormSelectionStaticMesh
-
-class FAssetsProcessorFormSelectionStaticMesh : public FAssetsProcessorFormSelectionBase<UStaticMesh>
-{
-public:
-	FAssetsProcessorFormSelectionStaticMesh () : FAssetsProcessorFormSelectionBase<UStaticMesh> () {};
-	virtual void ProcessAssets (TArray<UStaticMesh *> &Meshes) override
-	{
-	    
+		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Base Processor Run !! "));
 	};
+
 };
 
-//////////////////////////////////////////////////////////////////////////
-// FMineContentBrowserExtensions_Base
-
-template <class TAsset>
-class FMineContentBrowserExtensions_Base
+class FAssetsProcessorFormSelection_UStaticMesh_BuildDF : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
 {
-protected:
-	static FORCEINLINE FSlateIcon BaseMenuIcon = 
-		FSlateIcon (FEditorStyle::GetStyleSetName (), "ClassIcon.PaperSprite");
-	static FORCEINLINE FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Base Actions");
-	static FORCEINLINE FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for this Asset.");
+public:
+
+	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
+	{
+		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Build Distance Filed Processor Run !! "));
+	};
+
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+// FMineContentBrowserExtensions_UStaticMesh
+
+class FMineContentBrowserExtensions_UStaticMesh
+{
 
 public:
-	virtual ~FMineContentBrowserExtensions_Base () {};
+
+    ~FMineContentBrowserExtensions_UStaticMesh () {};
 
 	static void ExecuteSelectedContentFunctor (
-		TSharedPtr<FContentBrowserSelectedAssetExtensionBase> SelectedAssetFunctor
+		TSharedPtr<FAssetsProcessorFormSelection_Base> SelectedAssetFunctor
 	)
 	{
 		SelectedAssetFunctor->Execute ();
@@ -92,185 +56,116 @@ public:
 	 * @param SelectedAssets Selected Assets that would reference from content browser
 	 * @return shareRef to FExtender
 	 */
-	static TSharedRef<FExtender>
+	static  TSharedRef<FExtender>
 		OnExtendContentBrowserAssetSelectionMenu (
 			const TArray<FAssetData> &SelectedAssets
 		)
 	{
+		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("On StaticMesh Asset!"));
 		TSharedRef<FExtender> Extender (new FExtender ());
 
 		// Run thru the assets to determine if any meet our criteria
 		bool bCurrentType = false;
 		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
 			const FAssetData &Asset = *AssetIt;
-			bCurrentType = bCurrentType || (Asset.AssetClass == TAsset::StaticClass ()->GetFName ());
+			bCurrentType = bCurrentType || (Asset.AssetClass == UStaticMesh::StaticClass ()->GetFName ());
 		}
 
 		if (bCurrentType) {
 			// Add the sprite actions sub-menu extender
-			Extender->AddMenuExtension (
-				"GetAssetActions",
-				EExtensionHook::After,
-				nullptr,
-				FMenuExtensionDelegate::CreateStatic (
-					&FMineContentBrowserExtensions_Base::CreateActionsSubMenu,
-					SelectedAssets)
-			);
+				Extender->AddMenuExtension (
+					"GetAssetActions",
+					EExtensionHook::After,
+					nullptr,
+					FMenuExtensionDelegate::CreateStatic (
+						&FMineContentBrowserExtensions_UStaticMesh::CreateActionsSubMenu,
+						SelectedAssets)
+				);
 		}
 		return Extender;
 	}
 
-	static void CreateActionsSubMenu (
+    static void CreateActionsSubMenu (
 		FMenuBuilder &MenuBuilder,
 		TArray<FAssetData> SelectedAssets
 	)
 	{
+		const FSlateIcon BaseMenuIcon = FSlateIcon ();
+		const FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Static Mesh Actions");
+		const FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for Static Mesh Asset.");
+
 		MenuBuilder.AddSubMenu (
 			BaseMenuName,
 			BaseMenuTip,
-			FNewMenuDelegate::CreateRaw (&FMineContentBrowserExtensions_Base::PopulateActionsMenu, SelectedAssets),
+			FNewMenuDelegate::CreateStatic (&FMineContentBrowserExtensions_UStaticMesh::PopulateActionsMenu, SelectedAssets),
 			false,
 			BaseMenuIcon
 		);
 	}
 
-    virtual void PopulateActionsMenu (
+	static  void PopulateActionsMenu (
 		FMenuBuilder &MenuBuilder,
 		TArray<FAssetData> SelectedAssets
-	)
+	) 
 	{
 
-	}
+		//////////////////////////////////////////////////////////////
+		///
+		///	FAssetsProcessorFormSelection_UStaticMesh_PrintName
 
-};
+	    TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_PrintName> StaticMeshBaseProcessor =
+			MakeShareable(new FAssetsProcessorFormSelection_UStaticMesh_PrintName);
 
-//////////////////////////////////////////////////////////////////////////
-// FMineContentBrowserExtensions_Impl
+		// Add current selection to AssetsProcessor
+		StaticMeshBaseProcessor->SelectedAssets = SelectedAssets;
 
-class FMineContentBrowserExtensions_Impl
-{
-public:
-	static void ExecuteSelectedContentFunctor (
-		TSharedPtr<FContentBrowserSelectedAssetExtensionBase> SelectedAssetFunctor
-	)
-	{
-		SelectedAssetFunctor->Execute ();
-	}
-
-	/**
-	 * @brief Add Content Based Menu ! Remember using Delegate on loading time hook!
-	 * @param SelectedAssets Selected Assets that would reference from content browser
-	 * @return shareRef to FExtender
-	 */
-	static TSharedRef<FExtender>
-		OnExtendContentBrowserAssetSelectionMenu (
-			const TArray<FAssetData> &SelectedAssets
-		)
-	{
-		TSharedRef<FExtender> Extender (new FExtender ());
-
-		// Run thru the assets to determine if any meet our criteria
-		bool bAnyTextures = false;
-		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
-			const FAssetData &Asset = *AssetIt;
-			bAnyTextures = bAnyTextures || (Asset.AssetClass == UTexture2D::StaticClass ()->GetFName ());
-		}
-
-		if (bAnyTextures) {
-			// Add the sprite actions sub-menu extender
-			Extender->AddMenuExtension (
-				"GetAssetActions",
-				EExtensionHook::After,
-				nullptr,
-				FMenuExtensionDelegate::CreateStatic (&FMineContentBrowserExtensions_Impl::CreateActionsSubMenu, SelectedAssets));
-		}
-
-		return Extender;
-	}
-
-	static void CreateActionsSubMenu (
-		FMenuBuilder &MenuBuilder,
-		TArray<FAssetData> SelectedAssets
-	)
-	{
-		MenuBuilder.AddSubMenu (
-			LOCTEXT ("SpriteActionsSubMenuLabel", "Sprite Actions"),
-			LOCTEXT ("SpriteActionsSubMenuToolTip", "Sprite-related actions for this texture."),
-			FNewMenuDelegate::CreateStatic (&FMineContentBrowserExtensions_Impl::PopulateActionsMenu, SelectedAssets),
-			false,
-			FSlateIcon (FEditorStyle::GetStyleSetName (), "ClassIcon.PaperSprite")
-		);
-	}
-
-	static void PopulateActionsMenu (
-		FMenuBuilder &MenuBuilder, 
-		TArray<FAssetData> SelectedAssets
-	)
-	{
-		// Create sprites
-		TSharedPtr<FAssetsProcessorFormSelectionStaticMesh> SpriteCreatorFunctor =
-			MakeShareable (new FAssetsProcessorFormSelectionStaticMesh ());
-		SpriteCreatorFunctor->SelectedAssets = SelectedAssets;
-
-		// Build a Struct
-		FUIAction Action_CreateSpritesFromTextures (
+		// Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+		FUIAction Action_PrintName_ProcessFromAssets (
 			FExecuteAction::CreateStatic (
-				&FMineContentBrowserExtensions_Impl::ExecuteSelectedContentFunctor,
-				StaticCastSharedPtr<FContentBrowserSelectedAssetExtensionBase> (SpriteCreatorFunctor))
+				&FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+				StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshBaseProcessor))
 		);
 
-
+		// Add to Menu
 		MenuBuilder.AddMenuEntry (
-			LOCTEXT ("CB_Extension_Texture_CreateSprite", "Create Sprite"),
-			LOCTEXT ("CB_Extension_Texture_CreateSprite_Tooltip", "Create sprites from selected textures"),
+			LOCTEXT ("CBE_StaticMesh_PrintName", "Auto Get All Name"),
+			LOCTEXT ("CBE_StaticMesh_PrintName_ToolTips", "Auto Get All Name from selected"),
 			FSlateIcon (),
-			Action_CreateSpritesFromTextures,
+			Action_PrintName_ProcessFromAssets,
 			NAME_None,
 			EUserInterfaceActionType::Button);
 
-		// Extract Sprites
-		TSharedPtr<FAssetsProcessorFormSelectionStaticMesh>
-	    SpriteExtractorFunctor = 
-			MakeShareable (new FAssetsProcessorFormSelectionStaticMesh ());
+		//////////////////////////////////////////////////////////////
+		///
+		///	FAssetsProcessorFormSelection_UStaticMesh_BuildDF
 
-		SpriteExtractorFunctor->SelectedAssets = SelectedAssets;
-		SpriteExtractorFunctor->bSpecificAssetType = true;
+		TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_BuildDF> StaticMeshDFProcessor =
+			MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_BuildDF);
 
-		FUIAction Action_ExtractSpritesFromTextures (
+		// Add current selection to AssetsProcessor
+		StaticMeshDFProcessor->SelectedAssets = SelectedAssets;
+
+		// Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+		FUIAction Action_BuidDF_ProcessFromAssets (
 			FExecuteAction::CreateStatic (
-				&FMineContentBrowserExtensions_Impl::ExecuteSelectedContentFunctor,
-				StaticCastSharedPtr<FContentBrowserSelectedAssetExtensionBase> (SpriteExtractorFunctor))
+				&FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+				StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshDFProcessor))
 		);
 
+		// Add to Menu
 		MenuBuilder.AddMenuEntry (
-			LOCTEXT ("CB_Extension_Texture_ExtractSprites", "Extract Sprites"),
-			LOCTEXT ("CB_Extension_Texture_ExtractSprites_Tooltip", "Extract sprites from selected textures"),
+			LOCTEXT ("CBE_StaticMesh_BuildDF", "Auto Build DistanceField"),
+			LOCTEXT ("CBE_StaticMesh_BuildDF_ToolTips", "Auto Build DistanceField from selected"),
 			FSlateIcon (),
-			Action_ExtractSpritesFromTextures,
+			Action_BuidDF_ProcessFromAssets,
 			NAME_None,
 			EUserInterfaceActionType::Button);
+
 	}
-
-
 
 };
 
-class FMineContentBrowserExtensions_StaticMesh : public FMineContentBrowserExtensions_Base<UStaticMesh>
-{
-public:
-	static FSlateIcon BaseMenuIcon = FSlateIcon ();
-	static FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Static Mesh Actions");
-	static FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for Static Mesh Asset.");
 
-
-	virtual void PopulateActionsMenu (
-		FMenuBuilder &MenuBuilder,
-		TArray<FAssetData> SelectedAssets
-	) override
-	{
-	    
-	}
-};
 
 //////////////////////////////////////////////////////////////////////////
 // StaticMeshMenuActionsListener
@@ -287,11 +182,13 @@ void StaticMeshMenuActionsListener::OnShutdownModule()
 
 void StaticMeshMenuActionsListener::InstallHooks ()
 {
+	TSharedPtr<FMineContentBrowserExtensions_UStaticMesh> CB_Extension_UStaticMesh =
+		MakeShareable (new FMineContentBrowserExtensions_UStaticMesh);
+	UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install UStaticMesh Asset Menu Hook"));
 	// Declare Delegate 
-	ContentBrowserExtenderDelegate = 
-		FContentBrowserMenuExtender_SelectedAssets::CreateStatic (
-			&FMineContentBrowserExtensions_Impl::OnExtendContentBrowserAssetSelectionMenu
-		);
+	ContentBrowserExtenderDelegate =
+		FContentBrowserMenuExtender_SelectedAssets::CreateStatic(
+			&FMineContentBrowserExtensions_UStaticMesh::OnExtendContentBrowserAssetSelectionMenu);
 
 	// Get all content module delegates
 	TArray<FContentBrowserMenuExtender_SelectedAssets>
@@ -309,7 +206,7 @@ void StaticMeshMenuActionsListener::RemoveHooks ()
     &CBMenuExtenderDelegates = GetExtenderDelegates ();
 
 	CBMenuExtenderDelegates.RemoveAll (
-		[](const FContentBrowserMenuExtender_SelectedAssets &Delegate)->bool
+		[&](const FContentBrowserMenuExtender_SelectedAssets &Delegate)->bool
 		{
 		    return Delegate.GetHandle () == ContentBrowserExtenderDelegateHandle;
 		}
