@@ -99,7 +99,9 @@ public:
 			BaseMenuTip,
 			FNewMenuDelegate::CreateStatic (&FMineContentBrowserExtensions_UStaticMesh::PopulateActionsMenu, SelectedAssets),
 			false,
-			BaseMenuIcon
+			BaseMenuIcon,
+			true,
+			FName (TEXT ("MineStaticMeshActions"))
 		);
 	}
 

@@ -136,7 +136,7 @@ void FMineToolEditor::MakePulldownMenu (FMenuBarBuilder &menuBuilder)
         FText::FromString ("Open the MineToolMenu To Extended Button"),
         FNewMenuDelegate::CreateRaw (
             this, &FMineToolEditor::FillPulldownMenu),
-            "MineToolMenu",
+        FName (TEXT ("MineToolMenu")),
             FName (TEXT ("MineToolMenu"))
     );
 }
