@@ -3,7 +3,7 @@
 #include "Widgets/Docking/SDockableTab.h"
 #include "Widgets/Docking/SDockTabStack.h"
 #include "Framework/Application/SlateApplication.h"
-#include "TabTool.h"
+//#include "TabTool.h"
 #include "MineCustomToolEditor.h"
 
 /*
@@ -20,5 +20,5 @@ class TabToolPanel : public SCompoundWidget
     void Construct (const FArguments &InArgs);
 
 protected:
-    TWeakPtr<TabTool> tool;
+    TWeakPtr<class TabTool> tool;
 };

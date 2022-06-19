@@ -16,7 +16,7 @@ public:
 	virtual void OnShutdownModule () override;
     void InstallHooks ();
     void RemoveHooks ();
-    ~StaticMeshMenuActionsListener () {};
+    virtual ~StaticMeshMenuActionsListener () {};
 	static TArray<FContentBrowserMenuExtender_SelectedAssets> &GetExtenderDelegates ();
 public:
     FContentBrowserMenuExtender_SelectedAssets ContentBrowserExtenderDelegate;

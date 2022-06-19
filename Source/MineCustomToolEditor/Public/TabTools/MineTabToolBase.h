@@ -16,13 +16,19 @@ class FMineTabToolBase : public IMineCustomToolModuleListenerInterface, public T
 public:
     // IPixelopusToolBase
 
+    /*************************************************
+     * @Note Register new tabPanel
+     ************************************************/
     virtual void OnStartupModule () override
     {
         this->Initialize ();
-        FGlobalTabmanager::Get ()->RegisterNomadTabSpawner (TabName, FOnSpawnTab::CreateRaw (this, &FMineTabToolBase::SpawnTab))
-            .SetGroup (FMineToolEditor::Get ().GetMenuRoot ())
-            .SetDisplayName (TabDisplayName)
-            .SetTooltipText (ToolTipText);
+        FGlobalTabmanager::Get ()->RegisterNomadTabSpawner (
+            TabName,
+            FOnSpawnTab::CreateRaw (this, &FMineTabToolBase::SpawnTab)
+        )
+        .SetGroup (FMineToolEditor::Get ().GetMenuRoot ())
+        .SetDisplayName (TabDisplayName)
+        .SetTooltipText (ToolTipText);
     };
 
     virtual void OnShutdownModule () override

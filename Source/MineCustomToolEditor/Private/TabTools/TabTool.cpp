@@ -2,8 +2,23 @@
 
 void TabTool::OnStartupModule ()
 {
+    
+    /*************************************************
+     * Initialize FMineTabToolBase
+     * FMineTabToolBase will call this->Initialize
+     ************************************************/
     FMineTabToolBase::OnStartupModule ();
-    FMineToolEditor::Get ().AddMenuExtension (FMenuExtensionDelegate::CreateRaw (this, &TabTool::MakeMenuEntry), FName ("Section_2"));
+
+    /*************************************************
+     * Create Delegate for FMineToolEditor::MenuExtension
+     ************************************************/
+    FMenuExtensionDelegate &&TabMenuDelegate =
+        FMenuExtensionDelegate::CreateRaw (this, &TabTool::MakeMenuEntry);
+
+    FMineToolEditor::Get ().AddMenuExtension (
+        TabMenuDelegate,
+        FName ("Section_2")
+    );
 }
 
 void TabTool::OnShutdownModule ()
@@ -13,14 +28,17 @@ void TabTool::OnShutdownModule ()
 
 void TabTool::Initialize ()
 {
-    TabName = "TabTool";
-    TabDisplayName = FText::FromString ("Tab Tool");
-    ToolTipText = FText::FromString ("Tab Tool Window");
+    TabName = "MineBaseTable";
+    TabDisplayName = FText::FromString ("Mine Base Table Panel");
+    ToolTipText = FText::FromString ("Mine Base Tab Tool Window");
 }
 
-TSharedRef<SDockTab> TabTool::SpawnTab (const FSpawnTabArgs &TabSpawnArgs)
+TSharedRef<SDockTab> TabTool::SpawnTab (
+    const FSpawnTabArgs &TabSpawnArgs
+)
 {
-    TSharedRef<SDockTab> SpawnedTab = SNew (SDockTab)
+    TSharedRef<SDockTab> SpawnedTab =
+        SNew (SDockTab)
         .TabRole (ETabRole::NomadTab)
         [
             SNew (TabToolPanel)
