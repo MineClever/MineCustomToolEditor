@@ -11,6 +11,7 @@
  * we let FGlobalTabmanager to populate tab for this menu item.
  * We leave SpawnTab function to be overriden by child class to set proper widget.
  */
+
 class FMineTabToolBase : public IMineCustomToolModuleListenerInterface, public TSharedFromThis< FMineTabToolBase >
 {
 public:

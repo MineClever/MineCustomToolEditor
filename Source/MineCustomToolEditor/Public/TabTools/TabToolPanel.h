@@ -20,5 +20,5 @@ class TabToolPanel : public SCompoundWidget
     void Construct (const FArguments &InArgs);
 
 protected:
-    TWeakPtr<class TabTool> tool;
+    TWeakPtr<class TabTool> Tool;
 };

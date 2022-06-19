@@ -2,8 +2,8 @@
 
 void TabToolPanel::Construct (const FArguments &InArgs)
 {
-    tool = InArgs._Tool;
-    if (tool.IsValid ()) {
+    Tool = InArgs._Tool;
+    if (Tool.IsValid ()) {
         // do anything you need from tool object
     }
 
@@ -22,5 +22,16 @@ void TabToolPanel::Construct (const FArguments &InArgs)
                 .Text (FText::FromString (TEXT ("This is a tab example.")))
             ]
         ]
+        + SScrollBox::Slot ()
+        .VAlign (VAlign_Top)
+        .Padding (15.0f)
+        [
+            SNew (SButton)
+            .VAlign (VAlign_Top)
+            .HAlign(HAlign_Left)
+            .Text (FText::FromString (TEXT ("Unused Botton")))
+            .ForegroundColor (FColor (0, 255, 127, 255))
+        ]
+
     ];
 }
