@@ -70,7 +70,6 @@ public:
        auto const ExtenstionDelegate =
            FLayersModule::FLayersMenuExtender::CreateStatic (&FTestClassTemp_01::ExtenderMenu);
        LayersModule.GetAllLayersMenuExtenders ().Add(ExtenstionDelegate);
-       UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%d"), &ExtenstionDelegate);
     }
 
     static void ExportLayerName ()
@@ -94,16 +93,16 @@ public:
     {
         UE_LOG (LogMineCustomToolEditor, Error, TEXT ("ExtendMenuSection !!!"));
 
-        MenuBuilder.BeginSection (TEXT("MineTest"), LOCTEXT ("MineTestLayer", "TestLayer"));
+        MenuBuilder.BeginSection (TEXT("MineLayerTool"), LOCTEXT ("MineLayerToolMenu", "Mine Custom Layer Menu"));
         // Add Real Menu
-        MenuBuilder.AddMenuSeparator (FName (TEXT ("Section_1")));
+        // MenuBuilder.AddMenuSeparator (FName (TEXT ("Section_1")));
         MenuBuilder.AddMenuEntry (
             LOCTEXT ("ExporLayerName", "Export Layer Name"),
             LOCTEXT ("ExporLayerNameTooltip", "Export Layer Name."),
             FSlateIcon (),
             // NOTE 设置点击触发的函数
             FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportLayerName),
-            TEXT ("Section_1"),
+            TEXT ("MineLayerTool"),
             EUserInterfaceActionType::Button
         );
 
