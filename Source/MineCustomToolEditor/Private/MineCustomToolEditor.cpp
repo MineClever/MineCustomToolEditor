@@ -2,6 +2,7 @@
 #include "MenuTools/MenuTool.h"
 #include "TabTools/TabTool.h"
 #include "AssetMenuTools/StaticMeshMenuActionsListener.h"
+#include "TestCodes/TestCodeListener.hpp"
 
 IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -14,6 +15,9 @@ DEFINE_LOG_CATEGORY (LogMineCustomToolEditor);
 
 void FMineToolEditor::AddModuleListeners ()
 {
+    // Load TestCode
+    ModuleListeners.Emplace (MakeShareable (new FTestCodeListener));
+
     // Add Custom Command
     ModuleListeners.Emplace (MakeShareable(new MenuTool));
     // Add Custom Panel
