@@ -4,6 +4,7 @@
 class IMineCustomToolModuleListenerInterface
 {
 public:
+    virtual ~IMineCustomToolModuleListenerInterface() = default;
     virtual void OnStartupModule () {};
     virtual void OnShutdownModule () {};
 };
