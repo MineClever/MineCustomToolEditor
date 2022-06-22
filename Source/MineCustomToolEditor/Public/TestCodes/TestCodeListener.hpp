@@ -277,8 +277,7 @@ class FTestClassTemp_02 : public FTestClassTemp_Base
     //return the menu expansion item (that is, display content)
     TSharedRef<FExtender> LVCMExtender (const TSharedRef<FUICommandList> CommandList, const TArray<AActor *> Actors)
     {
-        //Load LevelEditor module
-        FLevelEditorModule &LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule> ("LevelEditor");
+
         //Create an extension item,
         //similar to the usage in the previous chapter,
         //use it to expand the menu item
@@ -291,6 +290,8 @@ class FTestClassTemp_02 : public FTestClassTemp_Base
             FMenuExtensionDelegate::CreateRaw (this, &FTestClassTemp_02::AddMenuExtension)
         );
 
+        //Load LevelEditor module
+        //FLevelEditorModule &LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule> ("LevelEditor");
         //auto& LVCMExtenders = LevelEditorModule.GetAllLevelViewportContextMenuExtenders();
         //LVCMExtenders.Pop();
 
