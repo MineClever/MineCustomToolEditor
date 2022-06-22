@@ -44,6 +44,7 @@ public:
     /* Command Action Objects */
     TSharedPtr<FUICommandInfo> MenuCommand1;
     TSharedPtr<FUICommandInfo> MenuCommand2;
+    TSharedPtr<FUICommandInfo> MenuCommand3;
 };
 
 class FTestClassTemp_Base :public TSharedFromThis<FTestClassTemp_Base>
@@ -135,6 +136,10 @@ public:
             ToolCommands.MenuCommand2,
             FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportSelectedLayerActorsName),
             FCanExecuteAction ());
+        CommandList->MapAction (
+            ToolCommands.MenuCommand3,
+            FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportSelectedActorsNames),
+            FCanExecuteAction ());
 
 
         TSharedPtr<FExtender> const MenuExtender = MakeShareable (new FExtender);
@@ -161,6 +166,7 @@ public:
         /* Add CommandInfo to Menu */
         MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand1);
         MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand2);
+        MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand3);
 
         MenuBuilder.EndSection ();
     }
@@ -210,7 +216,59 @@ public:
             FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
         }
     };
+
+    static void ExportSelectedActorsNames ()
+    {
+        TArray< AActor * > CurrentlySelectedActors;
+        FString StringArrayToCopy = "";
+        for (FSelectionIterator It (GEditor->GetSelectedActorIterator ()); It; ++It) {
+            auto &&Actor = static_cast<AActor *>(*It);
+            StringArrayToCopy.Append (Actor->GetName () + "\n");
+
+        }
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
+        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+    }
 };
+
+class FTestClassTemp_02 : public FTestClassTemp_Base
+{
+    FTestClassTemp_02 () {};
+    TSharedPtr<FTestClassTemp_02> Instance;
+
+    virtual void Initialize () override
+    {
+        Instance = MakeShareable (new FTestClassTemp_02 ());
+        LoadLayerExtender ();
+    };
+
+    virtual void Unload () override
+    {
+        if (!Instance.IsValid ()) {
+            Instance.Reset ();
+        }
+    };
+
+    void LoadLayerExtender () const
+    {
+
+    };
+
+    static void GetSelectedActors ()
+    {
+        TArray< AActor * > CurrentlySelectedActors;
+        FString StringArrayToCopy = "";
+        for (FSelectionIterator It (GEditor->GetSelectedActorIterator ()); It; ++It) {
+            AActor *Actor = static_cast<AActor *>(*It);
+            StringArrayToCopy.Append (Actor->GetName () + "\n");
+            //checkSlow (Actor->IsA (AActor::StaticClass ()));
+            //CurrentlySelectedActors.Add (Actor);
+        }
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
+        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+    }
+};
+
 
 class FTestCodeListener : public IMineCustomToolModuleListenerInterface
 {
