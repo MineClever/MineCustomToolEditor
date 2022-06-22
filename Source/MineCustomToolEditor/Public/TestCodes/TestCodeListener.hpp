@@ -38,7 +38,7 @@ public:
             EUserInterfaceActionType::Button,
             FInputChord ());
 
-        UI_COMMAND (MenuCommand2,
+        UI_COMMAND (MenuCommand3,
             "Export Selected Actors Name", "Export All Actors Name by Your selections.",
             EUserInterfaceActionType::Button,
             FInputChord ());
