@@ -256,22 +256,56 @@ class FTestClassTemp_02 : public FTestClassTemp_Base
 
     void LoadLayerExtender () const
     {
+        //Get the Level Editor module
+        FLevelEditorModule &LevelEditorModule = 
+            FModuleManager::LoadModuleChecked<FLevelEditorModule> ("LevelEditor");
+        //Get the Viewport menu context extension item
+        //(the right-click menu extension item of the selected object in the Viewport),
+        //which is a delegate array 
+        auto &LVCMExtenders = 
+            LevelEditorModule.GetAllLevelViewportContextMenuExtenders ();
+        //Add a new extension item to the array.
+        //When you right-click to select an Actor and pop up the menu,
+        //it will traverse the array and execute the bound delegate method
+        LVCMExtenders.Add (FLevelEditorModule::FLevelViewportMenuExtender_SelectedActors::CreateRaw (this, &FTestClassTemp_02::LVCMExtender));
 
     };
 
-    static void GetSelectedActors ()
+    //Delegate method,
+    //the first parameter is the command list,
+    //the second is the selected Actor array,
+    //return the menu expansion item (that is, display content)
+    TSharedRef<FExtender> LVCMExtender (const TSharedRef<FUICommandList> CommandList, const TArray<AActor *> Actors)
     {
-        TArray< AActor * > CurrentlySelectedActors;
-        FString StringArrayToCopy = "";
-        for (FSelectionIterator It (GEditor->GetSelectedActorIterator ()); It; ++It) {
-            AActor *Actor = static_cast<AActor *>(*It);
-            StringArrayToCopy.Append (Actor->GetName () + "\n");
-            //checkSlow (Actor->IsA (AActor::StaticClass ()));
-            //CurrentlySelectedActors.Add (Actor);
-        }
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
-        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+        //Load LevelEditor module
+        FLevelEditorModule &LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule> ("LevelEditor");
+        //Create an extension item,
+        //similar to the usage in the previous chapter,
+        //use it to expand the menu item
+        TSharedPtr<FExtender> Extender = MakeShareable (new FExtender ());
+        //Set the display content of the menu extension item,
+        //the bound delegate is the last chapter Created delegate method
+        Extender->AddMenuExtension ("ActorAsset",
+            EExtensionHook::After,
+            CommandList,
+            FMenuExtensionDelegate::CreateRaw (this, &FTestClassTemp_02::AddMenuExtension)
+        );
+
+        //auto& LVCMExtenders = LevelEditorModule.GetAllLevelViewportContextMenuExtenders();
+        //LVCMExtenders.Pop();
+
+
+        //If the last (we just created) Extender is removed,
+        //it will be displayed after the first menu and will not be displayed next time Show this item 
+        //Return to the extension item, it will be displayed in the menu bar 
+        return Extender.ToSharedRef ();
     }
+
+    void AddMenuExtension (FMenuBuilder &MenuBuilder)
+    {
+        
+    }
+
 };
 
 
