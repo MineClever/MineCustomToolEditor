@@ -6,8 +6,6 @@
 #include "Layers/Private/LayerCollectionViewModel.h"
 #include "Layers/Private/LayerCollectionViewCommands.h"
 
-
-
 #define LOCTEXT_NAMESPACE "TestCodeListener"
 
 class LayerMenuToolCommands : public TCommands<LayerMenuToolCommands>
@@ -52,6 +50,71 @@ public:
     TSharedPtr<FUICommandInfo> MenuCommand3;
 };
 
+struct CommandCallback
+{
+    static void PrintMe ()
+    {
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Hello ~~"));
+    };
+
+    static void ExportSelectedLayerActorsName ()
+    {
+        //FLayersModule &LayersModule =
+        //    FModuleManager::LoadModuleChecked<FLayersModule> (TEXT ("Layers"));
+        TWeakObjectPtr<ULayersSubsystem> const LayerSubSys = (GEditor->GetEditorSubsystem<ULayersSubsystem> ());
+
+        if (LayerSubSys.IsValid ()) {
+            TArray<FName> AllLayerNames;
+            FString StringArrayToCopy = "";
+            LayerSubSys->AddAllLayerNamesTo (AllLayerNames);
+            ULayer *Layer;
+            /* Get AActor in layer */
+            for (FName const LayerName : AllLayerNames) {
+                LayerSubSys->TryGetLayer (LayerName, Layer);
+                if (Layer->bIsVisible) {
+                    TArray<AActor *> ActorsInLayer = LayerSubSys->GetActorsFromLayer (LayerName);
+                    for (auto const Actor : ActorsInLayer) {
+                        StringArrayToCopy.Append (Actor->GetName () + "\n");
+                    }
+                }
+            }
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
+            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+        }
+    }
+
+    static void ExportLayerName ()
+    {
+
+        TWeakObjectPtr<ULayersSubsystem> const LayerSubSys = (GEditor->GetEditorSubsystem<ULayersSubsystem> ());
+
+        if (LayerSubSys.IsValid ()) {
+            TArray< FName > AllLayerNames;
+            FString StringArrayToCopy = "";
+            LayerSubSys->AddAllLayerNamesTo (AllLayerNames);
+            for (int32 NameId = 0; NameId < AllLayerNames.Num (); NameId++) {
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Names: %s"), *AllLayerNames[NameId].ToString ());
+                StringArrayToCopy.Append (AllLayerNames[NameId].ToString () + "\n");
+            }
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Layers Name Export to CopyBoard"));
+            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+        }
+    };
+
+    static void ExportSelectedActorsNames ()
+    {
+        TArray< AActor * > CurrentlySelectedActors;
+        FString StringArrayToCopy = "";
+        for (FSelectionIterator It (GEditor->GetSelectedActorIterator ()); It; ++It) {
+            auto &&Actor = static_cast<AActor *>(*It);
+            StringArrayToCopy.Append (Actor->GetName () + "\n");
+
+        }
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
+        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+    }
+};
+
 class FTestClassTemp_Base :public TSharedFromThis<FTestClassTemp_Base>
 {
 public:
@@ -62,19 +125,17 @@ public:
 
 class FTestClassTemp_01 : public FTestClassTemp_Base, public IHasMenuExtensibility
 {
-public:
-    FTestClassTemp_01 () {};
-
-    FName ClassName;
+protected:
     TSharedPtr<FTestClassTemp_01> Instance;
     TSharedPtr<FExtensibilityManager> AllMenuExtensibilityManager;
+
+public:
+    FTestClassTemp_01 () {};
 
     virtual void Initialize () override
     {
         Instance = MakeShareable(new FTestClassTemp_01 ());
-        ClassName = FName (TEXT ("FTestClassTemp_01"));
         AllMenuExtensibilityManager = MakeShareable (new FExtensibilityManager);
-        PrintMe ();
         LoadLayerExtender ();
     };
 
@@ -99,11 +160,6 @@ public:
         return ThisClassPtr.ToSharedRef ();
     };
 
-    void PrintMe () const
-    {
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s Is Working ~~"), *ClassName.ToString ());
-
-    };
 
     void LoadLayerExtender () const
     {
@@ -135,15 +191,15 @@ public:
         /* Do Mapping CommandInfo to CommandList ! */
         CommandList->MapAction (
             ToolCommands.MenuCommand1,
-            FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportLayerName),
+            FExecuteAction::CreateStatic (&CommandCallback::ExportLayerName),
             FCanExecuteAction ());
         CommandList->MapAction (
             ToolCommands.MenuCommand2,
-            FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportSelectedLayerActorsName),
+            FExecuteAction::CreateStatic (&CommandCallback::ExportSelectedLayerActorsName),
             FCanExecuteAction ());
         CommandList->MapAction (
             ToolCommands.MenuCommand3,
-            FExecuteAction::CreateStatic (&FTestClassTemp_01::ExportSelectedActorsNames),
+            FExecuteAction::CreateStatic (&CommandCallback::ExportSelectedActorsNames),
             FCanExecuteAction ());
 
 
@@ -176,70 +232,15 @@ public:
         MenuBuilder.EndSection ();
     }
 
-    static void ExportSelectedLayerActorsName ()
-    {
-        //FLayersModule &LayersModule =
-        //    FModuleManager::LoadModuleChecked<FLayersModule> (TEXT ("Layers"));
-        TWeakObjectPtr<ULayersSubsystem> const LayerSubSys = (GEditor->GetEditorSubsystem<ULayersSubsystem> ());
-
-        if (LayerSubSys.IsValid ())
-        {
-            TArray<FName> AllLayerNames;
-            FString StringArrayToCopy = "";
-            LayerSubSys->AddAllLayerNamesTo (AllLayerNames);
-            ULayer *Layer;
-            /* Get AActor in layer */
-            for (FName const LayerName : AllLayerNames) {
-                LayerSubSys->TryGetLayer (LayerName, Layer);
-                if (Layer->bIsVisible) {
-                    TArray<AActor *> ActorsInLayer = LayerSubSys->GetActorsFromLayer (LayerName);
-                    for (auto const Actor : ActorsInLayer) {
-                        StringArrayToCopy.Append (Actor->GetName () + "\n");
-                    }
-                }
-            }
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
-            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
-        }
-    }
-
-    static void ExportLayerName ()
-    {
-
-        TWeakObjectPtr<ULayersSubsystem> const LayerSubSys = (GEditor->GetEditorSubsystem<ULayersSubsystem> ());
-
-        if (LayerSubSys.IsValid())
-        {
-            TArray< FName > AllLayerNames;
-            FString StringArrayToCopy = "";
-            LayerSubSys->AddAllLayerNamesTo (AllLayerNames);
-            for (int32 NameId = 0; NameId < AllLayerNames.Num (); NameId++) {
-                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Names: %s"), *AllLayerNames[NameId].ToString ());
-                StringArrayToCopy.Append (AllLayerNames[NameId].ToString () + "\n");
-            }
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Layers Name Export to CopyBoard"));
-            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
-        }
-    };
-
-    static void ExportSelectedActorsNames ()
-    {
-        TArray< AActor * > CurrentlySelectedActors;
-        FString StringArrayToCopy = "";
-        for (FSelectionIterator It (GEditor->GetSelectedActorIterator ()); It; ++It) {
-            auto &&Actor = static_cast<AActor *>(*It);
-            StringArrayToCopy.Append (Actor->GetName () + "\n");
-
-        }
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
-        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
-    }
 };
 
 class FTestClassTemp_02 : public FTestClassTemp_Base
 {
-    FTestClassTemp_02 () {};
+protected:
     TSharedPtr<FTestClassTemp_02> Instance;
+
+public:
+    FTestClassTemp_02 () {};
 
     virtual void Initialize () override
     {
@@ -308,7 +309,6 @@ class FTestClassTemp_02 : public FTestClassTemp_Base
     }
 
 };
-
 
 class FTestCodeListener : public IMineCustomToolModuleListenerInterface
 {
