@@ -151,8 +151,8 @@ void FMineToolEditor::FillPulldownMenu (FMenuBuilder &menuBuilder)
     menuBuilder.BeginSection ("MineToolMenu", FText::FromString ("Mine Tab Menu"));
     menuBuilder.AddMenuSeparator (FName ("Section_2"));
     menuBuilder.EndSection ();
-
-    GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, TEXT ("从MineToolMenu菜单弹出"));
+    const FText StrMineToolMenuJump (LOCTEXT ("JumpFromMineToolMenu", "从MineToolMenu菜单弹出"));
+    GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(StrMineToolMenuJump.ToString()));
 
 }
 

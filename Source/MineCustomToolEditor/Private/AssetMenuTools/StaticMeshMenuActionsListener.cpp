@@ -1,5 +1,6 @@
 #include "AssetMenuTools/StaticMeshMenuActionsListener.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
+#include "UObject/Package.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
@@ -16,18 +17,75 @@ public:
 
 	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
 	{
+		FString StringArrayToCopy = "";
 		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Base Processor Run !! "));
+		uint32 LoopCount = 1;
+		for (auto const Asset : Assets)
+		{
+			UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(Asset->GetPathName ()));
+			GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(Asset->GetPathName ()));
+			StringArrayToCopy.Append (Asset->GetPathName ());
+			StringArrayToCopy.Append ("\n");
+			++LoopCount;
+			
+		}
+		
+		FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
 	};
-
 };
 
-class FAssetsProcessorFormSelection_UStaticMesh_BuildDF : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
+class FAssetsProcessorFormSelection_UStaticMesh_SetMeshProp : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
 {
 public:
 
 	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
 	{
 		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Build Distance Filed Processor Run !! "));
+
+		// Unreal AssetSubSystem
+	    UAssetEditorSubsystem * const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+
+        float const NewDFResolutionScale = 24;
+
+        for (auto const Asset : Assets)
+		{
+			uint32 const SourceModelNums = Asset->GetNumSourceModels ();
+			if (SourceModelNums > 0) {
+
+				// Get Asset WeakPtr cast to UObject (Safely)
+				TWeakObjectPtr<UStaticMesh> WeakAssetPtr = Asset;
+				UObject *AssetObject = Cast<UObject> (WeakAssetPtr);
+				AssetSubSystem->CloseAllEditorsForAsset (AssetObject);
+
+				Asset->Modify ();
+				
+				for (uint32 i = 0; i < SourceModelNums; ++i) {
+                    auto &&Model = Asset->GetSourceModel (i);
+					//FObjectEditorUtils::SetPropertyValue<>;
+					Model.BuildSettings.bGenerateDistanceFieldAsIfTwoSided = 1;
+					Model.BuildSettings.DistanceFieldResolutionScale = NewDFResolutionScale;
+					Model.BuildSettings.bUseFullPrecisionUVs = 1;
+					Model.BuildSettings.bUseHighPrecisionTangentBasis = 1;
+					Asset->DistanceFieldSelfShadowBias = 0.02;
+					Asset->bGenerateMeshDistanceField = 1;
+				}
+				Asset->Build ();
+
+				// Save!!
+				UPackage::Save (Asset->GetPackage (),
+					AssetObject,
+					EObjectFlags::RF_Public|::RF_Standalone,
+					Asset->GetPathName().GetCharArray().GetData(),
+					GError,
+					nullptr,
+					true,
+					true,
+					SAVE_Async
+				);
+
+			}
+		}
+
 	};
 
 };
@@ -91,7 +149,7 @@ public:
 	)
 	{
 		const FSlateIcon BaseMenuIcon = FSlateIcon ();
-		const FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Static Mesh Actions");
+		const FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Mine StaticMesh Actions");
 		const FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for Static Mesh Asset.");
 
 		MenuBuilder.AddSubMenu (
@@ -139,27 +197,27 @@ public:
 
 		//////////////////////////////////////////////////////////////
 		///
-		///	FAssetsProcessorFormSelection_UStaticMesh_BuildDF
+		///	FAssetsProcessorFormSelection_UStaticMesh_SetMeshProp
 
-		TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_BuildDF> StaticMeshDFProcessor =
-			MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_BuildDF);
+		TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_SetMeshProp> const StaticMeshPropsProcessor =
+			MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_SetMeshProp);
 
 		// Add current selection to AssetsProcessor
-		StaticMeshDFProcessor->SelectedAssets = SelectedAssets;
+		StaticMeshPropsProcessor->SelectedAssets = SelectedAssets;
 
 		// Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
-		FUIAction Action_BuidDF_ProcessFromAssets (
+		FUIAction Action_AutoSetProps_ProcessFromAssets (
 			FExecuteAction::CreateStatic (
 				&FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
-				StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshDFProcessor))
+				StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshPropsProcessor))
 		);
 
 		// Add to Menu
 		MenuBuilder.AddMenuEntry (
-			LOCTEXT ("CBE_StaticMesh_BuildDF", "Auto Build DistanceField"),
-			LOCTEXT ("CBE_StaticMesh_BuildDF_ToolTips", "Auto Build DistanceField from selected"),
+			LOCTEXT ("CBE_StaticMesh_BuildDF", "Auto Set Props"),
+			LOCTEXT ("CBE_StaticMesh_BuildDF_ToolTips", "Auto Build Props like: DistanceField from selected"),
 			FSlateIcon (),
-			Action_BuidDF_ProcessFromAssets,
+			Action_AutoSetProps_ProcessFromAssets,
 			NAME_None,
 			EUserInterfaceActionType::Button);
 
@@ -172,15 +230,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 // StaticMeshMenuActionsListener
 
-void StaticMeshMenuActionsListener::OnStartupModule()
-{
-	InstallHooks ();
-}
 
-void StaticMeshMenuActionsListener::OnShutdownModule()
-{
-	RemoveHooks ();
-}
 
 void StaticMeshMenuActionsListener::InstallHooks ()
 {
@@ -228,7 +278,7 @@ StaticMeshMenuActionsListener::GetExtenderDelegates()
 	/////////////////////////////
 	///Get Selection based Extender Delegate Event Source
 	/////////////////////////////
-	// TArray<FContentBrowserMenuExtender_SelectedAssets> &CBMenuExtenderDelegates =
+
     return ContentBrowserModule.GetAllAssetViewContextMenuExtenders ();
 }
 

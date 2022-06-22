@@ -6,14 +6,21 @@
 #include "IAssetTools.h"
 #include "AssetToolsModule.h"
 #include "Engine/StaticMesh.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 
 
 class StaticMeshMenuActionsListener : public IMineCustomToolModuleListenerInterface
 {
 public:
-	virtual void OnStartupModule () override;
-	virtual void OnShutdownModule () override;
+	virtual void OnStartupModule () override
+	{
+		this->InstallHooks ();
+	};
+	virtual void OnShutdownModule () override
+	{
+		this->RemoveHooks ();
+	};
     void InstallHooks ();
     void RemoveHooks ();
     virtual ~StaticMeshMenuActionsListener () {};
