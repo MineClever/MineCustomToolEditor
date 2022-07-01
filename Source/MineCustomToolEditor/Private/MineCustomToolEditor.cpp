@@ -1,8 +1,8 @@
 ﻿#include "MineCustomToolEditor.h"
 #include "MenuTools/MenuTool.h"
 #include "TabTools/TabTool.h"
-#include "AssetMenuTools/StaticMeshMenuActionsListener.h"
-#include "TestCodes/TestCodeListener.hpp"
+#include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
+#include "LayerMenuTools/FLayerSelectionTool.hpp"
 
 IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -15,15 +15,14 @@ DEFINE_LOG_CATEGORY (LogMineCustomToolEditor);
 
 void FMineToolEditor::AddModuleListeners ()
 {
-    // Load TestCode
-    ModuleListeners.Emplace (MakeShareable (new FTestCodeListener));
-
+    // Add Layer Menu Extender
+    ModuleListeners.Emplace (MakeShareable (new FLayerToolsListener));
     // Add Custom Command
     ModuleListeners.Emplace (MakeShareable(new MenuTool));
     // Add Custom Panel
     ModuleListeners.Emplace (MakeShareable (new TabTool));
     // Add StaticMesh ToolMenu
-    ModuleListeners.Emplace (MakeShareable (new StaticMeshMenuActionsListener));
+    ModuleListeners.Emplace (MakeShareable (new FStaticMeshMenuActionsListener));
 }
 
 void FMineToolEditor::StartupModule ()

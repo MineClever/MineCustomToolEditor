@@ -10,7 +10,7 @@
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 
 
-class StaticMeshMenuActionsListener : public IMineCustomToolModuleListenerInterface
+class FStaticMeshMenuActionsListener : public IMineCustomToolModuleListenerInterface
 {
 public:
 	virtual void OnStartupModule () override
@@ -23,7 +23,7 @@ public:
 	};
     void InstallHooks ();
     void RemoveHooks ();
-    virtual ~StaticMeshMenuActionsListener () {};
+    virtual ~FStaticMeshMenuActionsListener () {};
 	static TArray<FContentBrowserMenuExtender_SelectedAssets> &GetExtenderDelegates ();
 public:
     FContentBrowserMenuExtender_SelectedAssets ContentBrowserExtenderDelegate;

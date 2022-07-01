@@ -21,7 +21,7 @@ public:
     /* Register all commands in this class */
     virtual void RegisterCommands () override
     {
-        UI_COMMAND (MenuCommand1, "MenuCommand_1", "Menu Command Test 1.", EUserInterfaceActionType::Button, FInputGesture ());
+        UI_COMMAND (MenuCommand1, "CloseAllAssetEditor", "Close All Asset Editor.", EUserInterfaceActionType::Button, FInputGesture ());
         UI_COMMAND (MenuCommand2, "MenuCommand_2", "Menu Command Test 2.", EUserInterfaceActionType::Button, FInputGesture ());
         UI_COMMAND (MenuCommand3, "MenuCommand_3", "Menu Command Test 3.", EUserInterfaceActionType::Button, FInputGesture ());
     }
@@ -101,7 +101,15 @@ void MenuTool::MakeCppMenuEntry (FMenuBuilder &menuBuilder)
 
 void MenuTool::MenuCommand1 ()
 {
-    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MineClever的自定义工具 插槽1"));
+    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Close all asset not in edit"));
+
+    auto LEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+    auto &&LCurrentLoadedObjects = LEditorSubsystem->GetAllEditedAssets ();
+    for (auto const Asset : LCurrentLoadedObjects)
+    {
+        LEditorSubsystem->CloseAllEditorsForAsset (Asset);
+    }
+
 }
 
 void MenuTool::MenuCommand2 ()

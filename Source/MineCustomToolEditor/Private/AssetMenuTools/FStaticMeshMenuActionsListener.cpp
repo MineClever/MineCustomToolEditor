@@ -1,10 +1,10 @@
-#include "AssetMenuTools/StaticMeshMenuActionsListener.h"
+#include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
 #include "UObject/Package.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
-#define LOCTEXT_NAMESPACE "StaticMeshMenuActionsListener"
+#define LOCTEXT_NAMESPACE "FStaticMeshMenuActionsListener"
 
 
 
@@ -76,6 +76,53 @@ public:
 					AssetObject,
 					EObjectFlags::RF_Public|::RF_Standalone,
 					Asset->GetPathName().GetCharArray().GetData(),
+					GError,
+					nullptr,
+					true,
+					true,
+					SAVE_Async
+				);
+
+			}
+		}
+
+	};
+
+};
+
+
+class FAssetsProcessorFormSelection_UStaticMesh_RemoveDF : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
+{
+public:
+
+	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
+	{
+		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Remove Static Mesh Build Distance Filed Processor Run !! "));
+
+		// Unreal AssetSubSystem
+		UAssetEditorSubsystem *const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+
+		float const NewDFResolutionScale = 24;
+
+		for (auto const Asset : Assets) {
+			uint32 const SourceModelNums = Asset->GetNumSourceModels ();
+			if (SourceModelNums > 0) {
+
+				// Get Asset WeakPtr cast to UObject (Safely)
+				TWeakObjectPtr<UStaticMesh> WeakAssetPtr = Asset;
+				UObject *AssetObject = Cast<UObject> (WeakAssetPtr);
+				AssetSubSystem->CloseAllEditorsForAsset (AssetObject);
+
+				Asset->Modify ();
+				Asset->bGenerateMeshDistanceField = 0;
+				Asset->PostSaveRoot (true);
+				Asset->Build ();
+
+				// Save!!
+				UPackage::Save (Asset->GetPackage (),
+					AssetObject,
+					EObjectFlags::RF_Public | ::RF_Standalone,
+					Asset->GetPathName ().GetCharArray ().GetData (),
 					GError,
 					nullptr,
 					true,
@@ -221,6 +268,36 @@ public:
 			NAME_None,
 			EUserInterfaceActionType::Button);
 
+
+	    //////////////////////////////////////////////////////////////
+	    ///
+	    ///	FAssetsProcessorFormSelection_UStaticMesh_RemoveDF
+
+	    TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_RemoveDF> const StaticMeshRmDfProcessor =
+	        MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_RemoveDF);
+
+	    // Add current selection to AssetsProcessor
+		StaticMeshRmDfProcessor->SelectedAssets = SelectedAssets;
+
+	    //StaticMeshRmDfProcessor->SelectedAssets = SelectedAssets;
+
+	    // Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+	    FUIAction Action_RmDF_ProcessFromAssets (
+		    FExecuteAction::CreateStatic (
+			    &FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+			    StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshRmDfProcessor))
+	    );
+
+	    // Add to Menu
+	    MenuBuilder.AddMenuEntry (
+		    LOCTEXT ("CBE_StaticMesh_RmDF", "Remove DistanceField"),
+		    LOCTEXT ("CBE_StaticMesh_RmDF_ToolTips", "Remove DistanceField from selected"),
+		    FSlateIcon (),
+			Action_RmDF_ProcessFromAssets,
+		    NAME_None,
+		    EUserInterfaceActionType::Button);
+
+
 	}
 
 };
@@ -228,11 +305,11 @@ public:
 
 
 //////////////////////////////////////////////////////////////////////////
-// StaticMeshMenuActionsListener
+// FStaticMeshMenuActionsListener
 
 
 
-void StaticMeshMenuActionsListener::InstallHooks ()
+void FStaticMeshMenuActionsListener::InstallHooks ()
 {
 	//TSharedPtr<FMineContentBrowserExtensions_UStaticMesh> CB_Extension_UStaticMesh =
 	//	MakeShareable (new FMineContentBrowserExtensions_UStaticMesh);
@@ -253,7 +330,7 @@ void StaticMeshMenuActionsListener::InstallHooks ()
 		CBMenuExtenderDelegates.Last ().GetHandle ();
 }
 
-void StaticMeshMenuActionsListener::RemoveHooks ()
+void FStaticMeshMenuActionsListener::RemoveHooks ()
 {
 	TArray<FContentBrowserMenuExtender_SelectedAssets>
     &CBMenuExtenderDelegates = GetExtenderDelegates ();
@@ -267,7 +344,7 @@ void StaticMeshMenuActionsListener::RemoveHooks ()
 }
 
 TArray<FContentBrowserMenuExtender_SelectedAssets>& 
-StaticMeshMenuActionsListener::GetExtenderDelegates()
+FStaticMeshMenuActionsListener::GetExtenderDelegates()
 {
 	/////////////////////////////
 	///Get ContentBrowser Module
