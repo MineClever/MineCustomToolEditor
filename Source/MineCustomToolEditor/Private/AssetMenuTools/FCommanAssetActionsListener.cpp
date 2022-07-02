@@ -129,12 +129,16 @@ public:
         MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand1);
     }
 
-    template<class T>
+
+    template<class P>
     static TSharedPtr<FAssetsProcessorFormSelection_Base>
-    CastToBaseSelectedProcessor (T SubProcessor )
+    CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
     {
-        return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (SubProcessor);
+        TSharedPtr<P> const Processor = MakeShareable (new P);
+        Processor->SelectedAssets = SelectedAssets;
+        return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
     }
+
 
     static void MappingCommand (
         const TSharedPtr<FUICommandList> &CommandList,
@@ -142,13 +146,13 @@ public:
         const TArray<FAssetData> &SelectedAssets
     )
     {
-        TSharedPtr<FCommonAssetReloadPackagesProcessor> const ReloadPackagesProcessor =
-            MakeShareable (new FCommonAssetReloadPackagesProcessor);
-        ReloadPackagesProcessor->SelectedAssets = SelectedAssets;
 
         CommandList->MapAction (
             ToolCommands.MenuCommand1,
-            FExecuteAction::CreateStatic(&ExecuteProcessor, CastToBaseSelectedProcessor (ReloadPackagesProcessor)),
+            FExecuteAction::CreateStatic(
+                &ExecuteProcessor,
+                CreateProcessorPtr<FCommonAssetReloadPackagesProcessor> (SelectedAssets)
+            ),
             FCanExecuteAction()
         );
     }
