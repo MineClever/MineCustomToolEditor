@@ -1,5 +1,7 @@
 ﻿#include "MenuTools/MenuTool.h"
 #include "MineCustomToolEditor.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "PackageTools.h"
 
 #define LOCTEXT_NAMESPACE "MenuTool"
 
@@ -21,7 +23,7 @@ public:
     /* Register all commands in this class */
     virtual void RegisterCommands () override
     {
-        UI_COMMAND (MenuCommand1, "CloseAllAssetEditor", "Close All Asset Editor.", EUserInterfaceActionType::Button, FInputGesture ());
+        UI_COMMAND (MenuCommand1, "Close All Assets Editor NoSave", "Close All Asset Editor without saved.", EUserInterfaceActionType::Button, FInputGesture ());
         UI_COMMAND (MenuCommand2, "MenuCommand_2", "Menu Command Test 2.", EUserInterfaceActionType::Button, FInputGesture ());
         UI_COMMAND (MenuCommand3, "MenuCommand_3", "Menu Command Test 3.", EUserInterfaceActionType::Button, FInputGesture ());
     }
@@ -101,15 +103,22 @@ void MenuTool::MakeCppMenuEntry (FMenuBuilder &menuBuilder)
 
 void MenuTool::MenuCommand1 ()
 {
-    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Close all asset not in edit"));
+    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Close all asset without save in editor"));
 
-    auto LEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+    auto const LEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
     auto &&LCurrentLoadedObjects = LEditorSubsystem->GetAllEditedAssets ();
+
+    //FAssetRegistryModule &AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule> ("AssetRegistry");
+
+    TArray<UPackage *> AssetPackages;
     for (auto const Asset : LCurrentLoadedObjects)
     {
         LEditorSubsystem->CloseAllEditorsForAsset (Asset);
+        //AssetRegistryModule.Get ().AssetDeleted (Asset);
+        AssetPackages.AddUnique(Asset->GetPackage ());
     }
-
+    UPackageTools::ReloadPackages (AssetPackages);
+    //UPackageTools::UnloadPackages (AssetPackages);
 }
 
 void MenuTool::MenuCommand2 ()

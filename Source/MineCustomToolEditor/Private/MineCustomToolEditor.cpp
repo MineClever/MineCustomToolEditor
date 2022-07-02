@@ -3,6 +3,7 @@
 #include "TabTools/TabTool.h"
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "LayerMenuTools/FLayerSelectionTool.hpp"
+#include "AssetMenuTools/FCommonAssetActionsListener.h"
 
 IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -23,6 +24,8 @@ void FMineToolEditor::AddModuleListeners ()
     ModuleListeners.Emplace (MakeShareable (new TabTool));
     // Add StaticMesh ToolMenu
     ModuleListeners.Emplace (MakeShareable (new FStaticMeshMenuActionsListener));
+    // Add Common Asset ToolMenu
+    ModuleListeners.Emplace (MakeShareable(new FCommonAssetActionsListener));
 }
 
 void FMineToolEditor::StartupModule ()
