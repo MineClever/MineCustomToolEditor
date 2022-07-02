@@ -6,6 +6,7 @@
 
 #define LOCTEXT_NAMESPACE "FCommanAssetActionsListener"
 
+/* Commands */
 class MineAssetCtxMenuCommands : public TCommands<MineAssetCtxMenuCommands>
 {
 public:
@@ -39,6 +40,8 @@ public:
 
 };
 
+
+/* Processor */
 class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection_Base
 {
 
@@ -56,6 +59,8 @@ class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection
     }
 };
 
+
+/* Extension to menu */
 class FMineContentBrowserExtensions_CommonAssets
 {
 public:
@@ -150,8 +155,7 @@ public:
 };
 
 
-//////////////////////////////////////////////////////////////////////////
-// Start LocText NameSpace
+/* Load to module */
 
 void FCommonAssetActionsListener::InstallHooks()
 {
