@@ -18,7 +18,7 @@ public:
             FText::FromString ("MineCommonAssetCtxMenu"), // Context name for displaying
             NAME_None,   // No parent context
             FEditorStyle::GetStyleSetName () // Icon Style Set
-            )
+          )
     {
     }
 
@@ -75,7 +75,8 @@ public:
 
     static TSharedRef<FExtender>
     OnExtendContentBrowserAssetSelectionMenu (
-        const TArray<FAssetData> &SelectedAssets)
+        const TArray<FAssetData> &SelectedAssets
+    )
     {
         static TSharedPtr<FUICommandList> CommandList;
 
@@ -130,11 +131,15 @@ public:
 
 
     template<typename P>
-    static TSharedPtr<FAssetsProcessorFormSelection_Base>
+    static TSharedPtr<FAssetsProcessorFormSelection_Base> &
     CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
     {
-        static_assert(std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>, "Must be derived from FAssetsProcessorFormSelection_Base");
-        TSharedPtr<P> const Processor = MakeShareable (new P);
+        static_assert (
+            std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
+            "Must be derived from FAssetsProcessorFormSelection_Base"
+        );
+
+        TSharedPtr<P> const Processor = MakeShareable (new P);//On Heap
         Processor->SelectedAssets = SelectedAssets;
         return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
     }
