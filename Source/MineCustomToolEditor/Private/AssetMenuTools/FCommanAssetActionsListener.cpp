@@ -78,13 +78,12 @@ public:
         const TArray<FAssetData> &SelectedAssets)
     {
         static TSharedPtr<FUICommandList> CommandList;
-        static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
 
         if (!CommandList.IsValid())
             CommandList = MakeShareable (new FUICommandList);
         TSharedRef<FExtender> Extender (new FExtender ());
 
-        MappingCommand (CommandList,ToolCommands,SelectedAssets);
+        MappingCommand (CommandList,SelectedAssets);
 
         if (SelectedAssets.Num () > 0) {
             // Add the Static actions sub-menu extender
@@ -143,11 +142,10 @@ public:
 
     static void MappingCommand (
         const TSharedPtr<FUICommandList> &CommandList,
-        const MineAssetCtxMenuCommands &ToolCommands,
         const TArray<FAssetData> &SelectedAssets
     )
     {
-
+        static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
         CommandList->MapAction (
             ToolCommands.MenuCommand1,
             FExecuteAction::CreateStatic(
