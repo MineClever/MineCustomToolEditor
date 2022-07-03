@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
+#include "FAssetSourceControlCheckOut.hpp"
 #include "MineMouduleDefine.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,13 +36,15 @@ public:
 	{
 		// Filter for specific type assets
 		TArray<TAsset *> Assets;
+		TArray<FString> FilesPath;
 		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
 			const FAssetData &AssetData = *AssetIt;
 			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
 				Assets.Add (Asset);
+				FilesPath.Add (AssetData.GetFullName ());
 			}
 		}
-
+		FAssetSourceControlHelper::CheckOutFiles (FilesPath);
 		ProcessAssets (Assets);
 	}
 };
