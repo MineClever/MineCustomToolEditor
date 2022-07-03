@@ -67,7 +67,7 @@ public:
 
 
     static void ExecuteProcessor (
-        const TSharedPtr<FAssetsProcessorFormSelection_Base> Processor
+        TSharedPtr<FAssetsProcessorFormSelection_Base> const Processor
     )
     {
         Processor->Execute ();
@@ -130,8 +130,10 @@ public:
     }
 
 
+
+    //static FAssetsProcessorFormSelection_Base * &
     template<typename P>
-    static TSharedPtr<FAssetsProcessorFormSelection_Base> &
+    static TSharedPtr<FAssetsProcessorFormSelection_Base>
     CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
     {
         static_assert (
@@ -139,7 +141,7 @@ public:
             "Must be derived from FAssetsProcessorFormSelection_Base"
         );
 
-        TSharedPtr<P> const Processor = MakeShareable (new P);//On Heap
+        TSharedPtr<P> Processor = MakeShareable (new P);//On Heap
         Processor->SelectedAssets = SelectedAssets;
         return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
     }
