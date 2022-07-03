@@ -130,10 +130,11 @@ public:
     }
 
 
-    template<class P>
+    template<typename P>
     static TSharedPtr<FAssetsProcessorFormSelection_Base>
     CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
     {
+        static_assert(std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>, "Must be derived from FAssetsProcessorFormSelection_Base");
         TSharedPtr<P> const Processor = MakeShareable (new P);
         Processor->SelectedAssets = SelectedAssets;
         return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
