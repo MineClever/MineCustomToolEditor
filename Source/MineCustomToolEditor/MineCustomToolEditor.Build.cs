@@ -43,6 +43,7 @@ public class MineCustomToolEditor : ModuleRules
                 "BlueprintGraph",
                 "AnimGraph",
                 "ComponentVisualizers",
+                "SourceControl",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -62,6 +63,7 @@ public class MineCustomToolEditor : ModuleRules
                 "MainFrame",
                 "PropertyEditor",
                 "ComponentVisualizers",
+
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
