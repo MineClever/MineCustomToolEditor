@@ -38,14 +38,23 @@ public:
      */
     static bool CheckOutFiles (const TArray<FString> & Files)
     {
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num())
-        return USourceControlHelpers::CheckOutFiles (Files, true);
+        const bool bCheckOut = IsSourceControlAvailable ();
+        if (bCheckOut) {
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
+            return USourceControlHelpers::CheckOutFiles (Files, true);
+        }
+        else return bCheckOut;
+
     }
 
     static bool CheckOutFiles (const FString &File)
     {
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut file : %s"),*File)
-        return USourceControlHelpers::CheckOutFile (File, true);
+        const bool bCheckOut = IsSourceControlAvailable ();
+        if (bCheckOut) {
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut file : %s"), *File);
+            return USourceControlHelpers::CheckOutFile (File, true);
+        }
+        else return bCheckOut;
     }
 
 };
