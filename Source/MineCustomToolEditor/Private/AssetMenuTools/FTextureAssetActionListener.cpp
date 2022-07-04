@@ -5,17 +5,165 @@
 
 /* Implementation */
 
-class FUTextureAssetProcessor_AutoSet :public TAssetsProcessorFormSelection_Builder<UTexture>
+class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
 {
+protected:
+    static bool bTagRuleExist = false;
+    static TSet<FString> TagRule_SRGB;
+    static TSet<FString> TagRule_Normal;
+
+public:
+    FUTextureAssetProcessor_AutoSetTexFormat()
+    {
+        if (!bTagRuleExist)
+        {
+            UpdateTagRules ();
+        }
+    }
+
     virtual void ProcessAssets (TArray<UTexture *> &Assets) override
     {
         for (auto TexIt = Assets.CreateConstIterator(); TexIt; ++TexIt)
         {
-            const auto Texture = *TexIt;
+            UTexture * const Texture = *TexIt;
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target Texture is : %s"),*Texture->GetPathName());
+            ConvertProcessor (Texture);
         }
         
     }
+
+    static void UpdateTagRules ()
+    {
+        TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
+        TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
+        bTagRuleExist = true;
+    }
+
+    static TArray<FString>& CreateRuleFStringArray (const FName& RuleName)
+    {
+        /*
+         * TODO:
+         * Read rule form xml,ini...
+         */
+        TArray<FString> LTempStringArray;
+        switch (RuleName)
+        {
+            default:
+            case FName(TEXT("srgb")):
+            {
+                FString &&TempString = TEXT("srgb,fx,col,color");
+                TempString.ParseIntoArray (LTempStringArray, TEXT (","), true);
+                break;
+            };
+            case FName(TEXT("normal")):
+            {
+                break;
+            }
+        };
+        return LTempStringArray;
+    }
+
+    static void ConvertProcessor (UTexture* PTexObj)
+    {
+    #pragma region TextureObjectProperties
+        bool bSRGB = false;
+        bool bNorm = false;
+        bool bMask = false;
+        bool bForceLinear = false;
+        bool bSmallSize = false;
+        bool bVirtual = false;
+    #pragma endregion TextureObjectProperties
+
+        PTexObj->Modify ();
+        // DeferCompression is more easy to change properties
+        PTexObj->DeferCompression = true;
+
+        FString &&LTexName = PTexObj->GetName();
+        TArray<FString> LTagsArray;
+        TSet<FString> LTagsSet;
+
+        // "T_Tex.Name.1001"-->"T_Tex_Name_1001"
+        LTexName = LTexName.Replace (TEXT("."),TEXT("_"),ESearchCase::IgnoreCase);
+        LTexName.ParseIntoArray (LTagsArray, TEXT ("_"), true);
+        LTagsSet.Append (LTagsArray);
+
+        /* Test SRGB */
+        const TSet<FString>& LFoundTag_SRGB = TagRule_SRGB.Intersect(LTagsSet);
+        if (LFoundTag_SRGB.Num()>0) bSRGB = true;
+        
+
+        /* Test Normal map */
+        const TSet<FString>& LFoundTag_Normal = TagRule_Normal.Intersect(LTagsSet);
+        if (LFoundTag_Normal.Num()>0) bNorm = true;
+
+        /* SRGB Setting */
+        switch (true)
+        {
+            case bForceLinear:
+            case bNorm:
+            case bMask:
+            case (bSRGB == false):
+            case (bSRGB && bForceLinear):
+            {
+                PTexObj->SRGB = false;
+                break;
+            }
+            case bSRGB:
+            default:
+            {
+                PTexObj->SRGB = true;
+                break;
+            }
+        } //End Switch
+
+        /* Format setting */
+        TextureCompressionSettings LTempCompressionSettings;
+        switch (true)
+        {
+            case (bSmallSize):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                break;
+            }
+            case (bForceLinear && !bNorm):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+            }
+            case (bForceLinear && bSRGB):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
+            }
+            case (bForceLinear && bMask):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
+            }
+            case bForceLinear:
+            {
+                break;
+            }
+            case (bNorm && bForceLinear):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                break;
+            }
+            case (bNorm):
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+                break;
+            }
+
+            default:
+            {
+                LTempCompressionSettings = TextureCompressionSettings::TC_Default;
+                break;
+            }
+        }
+        PTexObj->CompressionSettings = LTempCompressionSettings;
+
+        /* Process Virtual texture property */
+        bool bVirtualTex = PTexObj->VirtualTextureStreaming;
+    }
+
 };
 
 
@@ -170,7 +318,7 @@ namespace  TextureAssetActionListenerInterior
                 ToolCommands.MenuCommand1,
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
-                    CreateProcessorPtr<FUTextureAssetProcessor_AutoSet> (SelectedAssets)
+                    CreateProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
             );
