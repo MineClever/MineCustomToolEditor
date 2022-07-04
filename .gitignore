@@ -34,6 +34,7 @@
 
 # Unreal Intermediate
 /Intermediate
+copy_to_main_project.bat
 
 # Windows
 Thumbs.db
