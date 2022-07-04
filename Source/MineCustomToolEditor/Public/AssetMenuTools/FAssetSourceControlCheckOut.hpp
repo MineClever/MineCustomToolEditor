@@ -131,7 +131,6 @@ namespace SourceControlHelpersInternal
 
 			if (bPackage) {
 				SCFile = FPaths::ConvertRelativePathToFull (SCFile);
-
 				return SCFile;
 			}
 		}
@@ -139,7 +138,7 @@ namespace SourceControlHelpersInternal
 		// Assume it is a qualified or relative file path
 
 		// Could normalize it
-		//FPaths::NormalizeFilename(SCFile);
+		FPaths::NormalizeFilename(SCFile);
 
 		if (!FPaths::IsRelative (SCFile)) {
 			return SCFile;
@@ -147,21 +146,26 @@ namespace SourceControlHelpersInternal
 
 		// Qualify based on process base directory.
 		// Something akin to "C:/Epic/UE4/Engine/Binaries/Win64/" as a current path.
-		SCFile = FPaths::ConvertRelativePathToFull (InFile);
+		SCFile = FPaths::ConvertRelativePathToFull (SCFile);
+
+		//if (SCFile.StartsWith(TEXT ("/Game/"), ESearchCase::IgnoreCase))
+		//{
+		//	SCFile.ReplaceInline (TEXT ("/Game/"), TEXT (""), ESearchCase::IgnoreCase);
+		//}
 
 		if (FPaths::FileExists (SCFile) || (bAllowDirectories && FPaths::DirectoryExists (SCFile))) {
 			return SCFile;
 		}
 
 		// Qualify based on project directory.
-		SCFile = FPaths::ConvertRelativePathToFull (FPaths::ConvertRelativePathToFull (FPaths::ProjectDir ()), InFile);
+		SCFile = FPaths::ConvertRelativePathToFull (FPaths::ConvertRelativePathToFull (FPaths::ProjectDir ()), SCFile);
 
 		if (FPaths::FileExists (SCFile) || (bAllowDirectories && FPaths::DirectoryExists (SCFile))) {
 			return SCFile;
 		}
 
 		// Qualify based on Engine directory
-		SCFile = FPaths::ConvertRelativePathToFull (FPaths::ConvertRelativePathToFull (FPaths::EngineDir ()), InFile);
+		SCFile = FPaths::ConvertRelativePathToFull (FPaths::ConvertRelativePathToFull (FPaths::EngineDir ()), SCFile);
 
 		return SCFile;
 	}
@@ -180,9 +184,9 @@ namespace SourceControlHelpersInternal
 		uint32 SkipNum = 0u;
 
 		for (const FString &File : InFiles) {
-			UE_LOG (LogMineCustomToolEditor, Log, TEXT ("current input file path is :%"), *File);
-			FString SCFile = ConvertFileToQualifiedPath (File, bSilent, bAllowDirectories);
 
+			FString SCFile = ConvertFileToQualifiedPath (File, bSilent, bAllowDirectories);
+			// UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("File path was converted to : %s"), *SCFile);
 			if (SCFile.IsEmpty ()) {
 				SkipNum++;
 			}
@@ -230,7 +234,8 @@ public:
     }
 
     /**
-     * @brief Use currently set source control provider to check out specified files.Wrap for silent mode
+     * @brief Use currently set source control provider to check out specified files.Wrap for silent mode.
+     * @note USE PACKAGE NAME !
      * @param Files Files to check out
      * @return true if succeeded
      */
@@ -240,8 +245,6 @@ public:
         if (bCheckOut) {
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
             const bool &&IsChecked = CheckOutOrAddFiles (Files, false);
-            FString const TempBoolString (IsChecked?"True":"False");
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Is CheckOut all files? %s"), *TempBoolString);
             return IsChecked;
         }
         else return bCheckOut;
@@ -277,68 +280,32 @@ public:
 		for (int32 Index = 0; Index < NumFiles; ++Index) {
 			FString SCFile = SCFiles[Index];
 			FSourceControlStateRef SCState = SCStates[Index];
-			UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("current file : %s\n"), *SCFile);
+
 			// Less error checking and info is made for multiple files than the single file version.
 			// This multi-file version could be made similarly more sophisticated.
 
 			if (!SCState->IsCheckedOut()) { // UncheckedOut
 				if (!SCState->IsAdded ()) { // if not mark added
 					if (SCState->CanAdd ()) {
-						UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark for add file : %s"), *SCFile);
+						//UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark for add file : %s"), *SCFile);
 						SCFilesToAdd.Add (SCFile);
 					}
 					else {
 						bCannotAddAtLeastOneFile = true;
 					}
-
-//#pragma region TEST_CHECKER_STATE
-//					FString TempStringToTest = TEXT ("False");
-//					if (SCState->CanCheckout ())
-//						TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("CanCheckout %s"), *TempStringToTest);
-//					TempStringToTest = TEXT ("False");
-//					if (!SCState->IsConflicted ())
-//						TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("!IsConflicted %s"), *TempStringToTest);
-//					TempStringToTest = TEXT ("False");
-//					if (SCState->IsSourceControlled ())
-//						TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("IsSourceControlled %s"), *TempStringToTest);
-//					TempStringToTest = TEXT ("False");
-//					if (!SCState->IsCurrent ())
-//						TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("IsCurrent %s"), *TempStringToTest);
-//					TempStringToTest = TEXT ("False");
-//					if (SCState->IsUnknown ())
-//						TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("IsUnknown %s"), *TempStringToTest);
-//					TempStringToTest = TEXT ("False");
-//					if (
-//						(!SCState->IsConflicted ()) &&
-//						!SCState->IsCheckedOutOther ()
-//						) TempStringToTest = TEXT ("True");
-//					UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("unSafe Checked Out %s"), *TempStringToTest);
-//#pragma endregion TEST_CHECKER_STATE
-
-
-					if (!SCState->IsConflicted ())
+					if (SCState->CanCheckout ())
 					{
-						UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("UnknowFile, Unsafe Check Out : %s"), *SCFile);
-						if (!SCState->IsCheckedOutOther ())
-						{
-							SCFilesToCheckout.Add (SCFile);
-						}
-						else {
-							bCannotCheckoutAtLeastOneFile = true;
-						}
-					}
-				}
-				else { // if mark added
-					if (SCState->CanCheckout ()) {
 						SCFilesToCheckout.Add (SCFile);
-					}
-					else {
-						bCannotCheckoutAtLeastOneFile = true;
+					} else // check out unsafely !
+					{
+						if (!SCState->IsConflicted () && SCState->IsSourceControlled ()) {
+							if (!SCState->IsCheckedOutOther ()) {
+								SCFilesToCheckout.Add (SCFile);
+							}
+							else {
+								bCannotCheckoutAtLeastOneFile = true;
+							}
+						}
 					}
 				}
 			}else

@@ -41,7 +41,7 @@ public:
 			const FAssetData &AssetData = *AssetIt;
 			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
 				Assets.Add (Asset);
-				FilesPath.Add (AssetData.GetFullName ());
+				FilesPath.Add (AssetData.GetPackage ()->GetPathName());
 			}
 		}
 		FAssetSourceControlHelper::CheckOutFiles (FilesPath);

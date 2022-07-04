@@ -22,12 +22,12 @@ public:
 		uint32 LoopCount = 1;
 		for (auto const Asset : Assets)
 		{
-			UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(Asset->GetPathName ()));
-			GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(Asset->GetPathName ()));
-			StringArrayToCopy.Append (Asset->GetPathName ());
+			const FString TempAssetPathName = Asset->GetPackage ()->GetPathName ();
+			UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(TempAssetPathName));
+			GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(TempAssetPathName));
+			StringArrayToCopy.Append (TempAssetPathName);
 			StringArrayToCopy.Append ("\n");
 			++LoopCount;
-			
 		}
 		
 		FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
