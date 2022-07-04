@@ -4,6 +4,7 @@
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "LayerMenuTools/FLayerSelectionTool.hpp"
 #include "AssetMenuTools/FCommonAssetActionsListener.h"
+#include "AssetMenuTools/FTextureAssetActionListener.h"
 
 IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -26,6 +27,8 @@ void FMineToolEditor::AddModuleListeners ()
     ModuleListeners.Emplace (MakeShareable (new FStaticMeshMenuActionsListener));
     // Add Common Asset ToolMenu
     ModuleListeners.Emplace (MakeShareable(new FCommonAssetActionsListener));
+    // Add Texture Asset ToolMenu
+    ModuleListeners.Emplace (MakeShareable (new FTextureAssetActionListener));
 }
 
 void FMineToolEditor::StartupModule ()

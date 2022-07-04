@@ -14,6 +14,10 @@
 class FAssetsProcessorFormSelection_UStaticMesh_PrintName : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
 {
 public:
+	FAssetsProcessorFormSelection_UStaticMesh_PrintName () :TAssetsProcessorFormSelection_Builder<UStaticMesh>(false)
+	{
+	    
+	}
 
 	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
 	{

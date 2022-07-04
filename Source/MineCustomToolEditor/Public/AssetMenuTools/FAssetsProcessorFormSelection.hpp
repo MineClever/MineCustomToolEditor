@@ -20,13 +20,22 @@ public:
 //////////////////////////////////////////////////////////////////////////
 // TAssetsProcessorFormSelection_Builder
 
+/**
+ * @brief : Help to auto filter assets with specific Template Typename
+ * @tparam TAsset : Should be derived form UObject
+ */
 template<class TAsset>
 class TAssetsProcessorFormSelection_Builder : public FAssetsProcessorFormSelection_Base
 {
 public:
 	bool bSpecificAssetType;
+	bool bSourceControl;
+	TAssetsProcessorFormSelection_Builder () : bSpecificAssetType (false), bSourceControl (true)
+	{
+	}
 
-	TAssetsProcessorFormSelection_Builder () : bSpecificAssetType (false)
+	TAssetsProcessorFormSelection_Builder (const bool &bSourceControl) :
+        bSpecificAssetType (false), bSourceControl(bSourceControl)
 	{
 	}
 
@@ -41,10 +50,12 @@ public:
 			const FAssetData &AssetData = *AssetIt;
 			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
 				Assets.Add (Asset);
-				FilesPath.Add (AssetData.GetPackage ()->GetPathName());
+				if (bSourceControl)
+				    FilesPath.Add (AssetData.GetPackage ()->GetPathName());
 			}
 		}
-		FAssetSourceControlHelper::CheckOutFiles (FilesPath);
+		if (bSourceControl)
+		    FAssetSourceControlHelper::CheckOutFiles (FilesPath);
 		ProcessAssets (Assets);
 	}
 };

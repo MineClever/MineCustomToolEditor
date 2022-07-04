@@ -5,7 +5,6 @@
 #include "ISourceControlModule.h"
 #include "ISourceControlRevision.h"
 #include "ISourceControlProvider.h"
-//#include "SourceControlHelpers.h"
 #include "SourceControlOperations.h"
 #include "Logging/MessageLog.h"
 
@@ -104,8 +103,9 @@ namespace SourceControlHelpersInternal
 		if (SCFile[0] == TEXT ('/') && FPackageName::IsValidLongPackageName (SCFile, /*bIncludeReadOnlyRoots*/false))//	if (SCFile[0] == TEXT('/') && FPackageName::IsValidPath(SCFile))
 		{
 			// Assume it is a package
+			FPackageName::TryConvertFilenameToLongPackageName (SCFile, SCFile);
 			bool bPackage = true;
-
+			
 			// Try to get filename by finding it on disk
 			if (!FPackageName::DoesPackageExist (SCFile, nullptr, &SCFile)) {
 				// First do the conversion without any extension set, as this will allow us to test whether the path represents an existing directory rather than an asset
