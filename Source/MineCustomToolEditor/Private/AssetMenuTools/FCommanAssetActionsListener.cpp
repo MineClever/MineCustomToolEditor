@@ -31,12 +31,17 @@ public:
             "Reload selected assets form top package.",
             EUserInterfaceActionType::Button, FInputGesture ()
         );
-
+        UI_COMMAND (MenuCommand2,
+            "Copy Asset Content Path",
+            "Copy Asset Content Path from selected.",
+            EUserInterfaceActionType::Button, FInputGesture ()
+        );
     }
 
 public:
     /* Command Action Objects */
     TSharedPtr<FUICommandInfo> MenuCommand1;
+    TSharedPtr<FUICommandInfo> MenuCommand2;
 
 };
 
@@ -58,6 +63,27 @@ class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection
         UPackageTools::ReloadPackages (AssetPackages);
     }
 };
+
+class FCommonAssetCopyPackagesPathProcessor : public FAssetsProcessorFormSelection_Base
+{
+
+    virtual void Execute () override
+    {
+        FString StringArrayToCopy = "";
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Copy Assets Path Processor Run !! "));
+        uint32 LoopCount = 1;
+        for (auto const Asset : SelectedAssets) {
+            const FString TempAssetPathName = Asset.GetPackage ()->GetPathName ();
+            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(TempAssetPathName));
+            GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(TempAssetPathName));
+            StringArrayToCopy.Append (TempAssetPathName);
+            StringArrayToCopy.Append ("\n");
+            ++LoopCount;
+        }
+        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+    }
+};
+
 
 
 /* Extension to menu */
@@ -127,6 +153,7 @@ public:
         // Add to Menu
         static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
         MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand1);
+        MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand2);
     }
 
 
@@ -161,6 +188,15 @@ public:
             ),
             FCanExecuteAction()
         );
+        CommandList->MapAction (
+            ToolCommands.MenuCommand2,
+            FExecuteAction::CreateStatic (
+                &ExecuteProcessor,
+                CreateProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
+            ),
+            FCanExecuteAction ()
+        );
+        
     }
 };
 

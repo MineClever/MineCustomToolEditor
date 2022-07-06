@@ -1,176 +1,288 @@
 ﻿#include "AssetMenuTools/FTextureAssetActionListener.h"
+#include "ObjectEditorUtils.h"
+#include "AssetToolsModule.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
+#include "EditorFramework/AssetImportData.h"
+#include "Engine/Private/VT/VirtualTextureBuiltData.h"
+#include "VT/VirtualTextureBuildSettings.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
 
-/* Implementation */
-
-class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
+/* Implementation of FUTextureAssetProcessor_AutoSetTexFormat */
+namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
-protected:
-    static bool bTagRuleExist = false;
-    static TSet<FString> TagRule_SRGB;
-    static TSet<FString> TagRule_Normal;
-
-public:
-    FUTextureAssetProcessor_AutoSetTexFormat()
+    class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
     {
-        if (!bTagRuleExist)
+    protected:
+        static bool bTagRuleExist;
+        static TSet<FString> TagRule_SRGB;
+        static TSet<FString> TagRule_Normal;
+        static TSet<FString> TagRule_Mask;
+        static TSet<FString> TagRule_ForceLinear;
+
+    public:
+        FUTextureAssetProcessor_AutoSetTexFormat ()
         {
-            UpdateTagRules ();
+            if (!bTagRuleExist) {
+                UpdateTagRules ();
+            }
         }
-    }
 
-    virtual void ProcessAssets (TArray<UTexture *> &Assets) override
-    {
-        for (auto TexIt = Assets.CreateConstIterator(); TexIt; ++TexIt)
+        virtual void ProcessAssets (TArray<UTexture *> &Assets) override
         {
-            UTexture * const Texture = *TexIt;
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target Texture is : %s"),*Texture->GetPathName());
-            ConvertProcessor (Texture);
+            for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
+                UTexture *const Texture = *TexIt;
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target Texture is : %s"), *Texture->GetPathName ());
+                CallConvertProcessor (Texture);
+            }
+
         }
-        
-    }
 
-    static void UpdateTagRules ()
-    {
-        TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
-        TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
-        bTagRuleExist = true;
-    }
-
-    static TArray<FString>& CreateRuleFStringArray (const FName& RuleName)
-    {
-        /*
-         * TODO:
-         * Read rule form xml,ini...
-         */
-        TArray<FString> LTempStringArray;
-        switch (RuleName)
+        static void UpdateTagRules ()
         {
-            default:
-            case FName(TEXT("srgb")):
+            TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
+            TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
+            TagRule_Mask.Append (CreateRuleFStringArray (TEXT ("mask")));
+            TagRule_ForceLinear.Append (CreateRuleFStringArray (TEXT ("forcelinear")));
+            bTagRuleExist = true;
+        }
+
+        static TArray<FString> CreateRuleFStringArray (const FName &RuleName)
+        {
+            /*
+             * TODO:
+             * Read rules form ini...
+             */
+            static TArray<FString> LTempStringArray;
+            LTempStringArray.Empty ();
+
+            /* Lambda Function to create FString Array */
+            static auto ArrayCreateFunc = [&](const TCHAR *InputText)
             {
-                FString &&TempString = TEXT("srgb,fx,col,color");
+                FString &&TempString = InputText;
                 TempString.ParseIntoArray (LTempStringArray, TEXT (","), true);
+            };
+
+            while (true) {
+                if (RuleName == TEXT ("srgb")) 
+                {
+                    ArrayCreateFunc (TEXT ("srgb,fx,col,color,d,diffuse,diff"));
+                    break;
+                } 
+                if (RuleName == TEXT ("normal"))
+                {
+                    ArrayCreateFunc (TEXT ("normal,norm,nor,faxian,n"));
+                    break;
+                }
+                if (RuleName == TEXT ("mask")) {
+                    ArrayCreateFunc (TEXT ("op,o,mask,opacity,alpha,silk,grey"));
+                    break;
+                }
+                if (RuleName == TEXT ("forcelinear")) {
+                    ArrayCreateFunc (TEXT ("linear,arm"));
+                    break;
+                }
+                if (RuleName == TEXT ("floating")) {
+                    ArrayCreateFunc (TEXT ("hdr,hdri,floating"));
+                    break;
+                }
                 break;
             };
-            case FName(TEXT("normal")):
-            {
-                break;
-            }
-        };
-        return LTempStringArray;
-    }
+            return LTempStringArray;
+        }
 
-    static void ConvertProcessor (UTexture* PTexObj)
-    {
-    #pragma region TextureObjectProperties
-        bool bSRGB = false;
-        bool bNorm = false;
-        bool bMask = false;
-        bool bForceLinear = false;
-        bool bSmallSize = false;
-        bool bVirtual = false;
-    #pragma endregion TextureObjectProperties
-
-        PTexObj->Modify ();
-        // DeferCompression is more easy to change properties
-        PTexObj->DeferCompression = true;
-
-        FString &&LTexName = PTexObj->GetName();
-        TArray<FString> LTagsArray;
-        TSet<FString> LTagsSet;
-
-        // "T_Tex.Name.1001"-->"T_Tex_Name_1001"
-        LTexName = LTexName.Replace (TEXT("."),TEXT("_"),ESearchCase::IgnoreCase);
-        LTexName.ParseIntoArray (LTagsArray, TEXT ("_"), true);
-        LTagsSet.Append (LTagsArray);
-
-        /* Test SRGB */
-        const TSet<FString>& LFoundTag_SRGB = TagRule_SRGB.Intersect(LTagsSet);
-        if (LFoundTag_SRGB.Num()>0) bSRGB = true;
-        
-
-        /* Test Normal map */
-        const TSet<FString>& LFoundTag_Normal = TagRule_Normal.Intersect(LTagsSet);
-        if (LFoundTag_Normal.Num()>0) bNorm = true;
-
-        /* SRGB Setting */
-        switch (true)
+        virtual void CallConvertProcessor(UTexture *PTexObj)
         {
-            case bForceLinear:
-            case bNorm:
-            case bMask:
-            case (bSRGB == false):
-            case (bSRGB && bForceLinear):
-            {
-                PTexObj->SRGB = false;
-                break;
-            }
-            case bSRGB:
-            default:
-            {
-                PTexObj->SRGB = true;
-                break;
-            }
-        } //End Switch
+            ConvertProcessor (PTexObj,true);
+        }
 
-        /* Format setting */
-        TextureCompressionSettings LTempCompressionSettings;
-        switch (true)
+        static void ConvertProcessor (UTexture *PTexObj,const bool bConvertVirtualTex=false)
         {
-            case (bSmallSize):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
-                break;
-            }
-            case (bForceLinear && !bNorm):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
-            }
-            case (bForceLinear && bSRGB):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
-            }
-            case (bForceLinear && bMask):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
-            }
-            case bForceLinear:
-            {
-                break;
-            }
-            case (bNorm && bForceLinear):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
-                break;
-            }
-            case (bNorm):
-            {
-                LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
-                break;
-            }
+#pragma region TextureObjectProperties
+            bool bSRGB = false;
+            bool bNorm = false;
+            bool bMask = false;
+            bool bForceLinear = false;
+            bool bSmallSize = false;
+            bool bVirtual = false;
+#pragma endregion TextureObjectProperties
 
-            default:
-            {
+            PTexObj->Modify ();
+            // DeferCompression is more easy to change properties
+            PTexObj->DeferCompression = true;
+
+            FString &&LTexName = PTexObj->GetName ();
+            TArray<FString> LTagsArray;
+            TSet<FString> LTagsSet;
+
+            // "T_Tex.Name.1001"-->"T_Tex_Name_1001"
+            LTexName = LTexName.Replace (TEXT ("."), TEXT ("_"), ESearchCase::IgnoreCase);
+            LTexName.ParseIntoArray (LTagsArray, TEXT ("_"), true);
+            LTagsSet.Append (LTagsArray);
+
+            /* Test SRGB map*/
+            const TSet<FString> &&LFoundTag_SRGB = TagRule_SRGB.Intersect (LTagsSet);
+            if (LFoundTag_SRGB.Num () > 0) bSRGB = true;
+
+
+            /* Test Normal map */
+            const TSet<FString> &&LFoundTag_Normal = TagRule_Normal.Intersect (LTagsSet);
+            if (LFoundTag_Normal.Num () > 0) bNorm = true;
+
+            /* Test Mask Map*/
+            const TSet<FString> &&LFoundTag_Mask = TagRule_Mask.Intersect (LTagsSet);
+            if (LFoundTag_Mask.Num () > 0) bMask = true;
+
+            /* Test Force linear map */
+            const TSet<FString> &&LFoundTag_ForceLinear = TagRule_ForceLinear.Intersect (LTagsSet);
+            if (LFoundTag_ForceLinear.Num () > 0) bForceLinear = true;
+
+            /* SRGB Setting */
+            while (true) {
+                if (
+                    bForceLinear
+                    || bNorm
+                    || bMask
+                    || (bSRGB == false)
+                    || (bSRGB && bForceLinear)
+                    ) {
+                    PTexObj->SRGB = false;
+                    break;
+                }
+                if (bSRGB)
+                    PTexObj->SRGB = true;
+                break;
+            } //End Switch
+
+            /* Format setting */
+            TextureCompressionSettings LTempCompressionSettings = TextureCompressionSettings::TC_Default;
+            while (true) {
+                if (bSmallSize) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                    break;
+                }
+                if (bForceLinear && !bNorm) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                }
+                if (bForceLinear && bSRGB) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
+                }
+                if (bForceLinear && bMask) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
+                }
+                if (bForceLinear) {
+                    break;
+                }
+                if (bNorm && bForceLinear) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                    break;
+                }
+                if (bNorm) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+                    break;
+                }
+                // Default
                 LTempCompressionSettings = TextureCompressionSettings::TC_Default;
                 break;
             }
+            PTexObj->CompressionSettings = LTempCompressionSettings;
+
+
+            /* Process Virtual texture property */
+            bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
+            if (bVirtualTex && bConvertVirtualTex)
+            {
+                ConvertTextureVirtualTo2d (PTexObj);
+            }
         }
-        PTexObj->CompressionSettings = LTempCompressionSettings;
 
-        /* Process Virtual texture property */
-        bool bVirtualTex = PTexObj->VirtualTextureStreaming;
-    }
+        static void ConvertTextureVirtualTo2d (UTexture* const PTexObj)
+        {
+            const FAssetToolsModule &AssetToolsModule =
+                FModuleManager::Get ().LoadModuleChecked<FAssetToolsModule> ("AssetTools");
 
-};
+            // Find all inputted path
+            const UAssetImportData * TexImportData = PTexObj->AssetImportData;
+            const TArray<FString> filesToImport = TexImportData->ExtractFilenames ();
+
+            if (filesToImport.Num()<=1)
+            {
+                // Reflector Method
+                PTexObj->VirtualTextureStreaming = 0;
+                //FObjectEditorUtils::SetPropertyValue (PTexObj,TEXT("VirtualTextureStreaming"),0);
+            }
+
+            // Package Var
+            FString TextureName;
+            FString PackageName;
+            const FString DefaultSuffix = TEXT ("");
+
+            // Build valid package name
+            AssetToolsModule.Get ().CreateUniqueAssetName (PTexObj->GetOutermost ()->GetName (),
+                DefaultSuffix, PackageName, TextureName);
+            FString PackagePath = FPackageName::GetLongPackagePath (PackageName);
+            PackagePath = FPaths::GetPath (PackagePath);
+
+            // Texture Settings
+            UAutomatedAssetImportData *importData = NewObject<UAutomatedAssetImportData> ();
+            importData->bReplaceExisting = true;
+            importData->DestinationPath = PackagePath;
+            importData->Filenames = filesToImport;
+            auto importedAssets = AssetToolsModule.Get ().ImportAssetsAutomated (importData);
+            //for (auto CurrentAsset: importedAssets)
+            //{
+            //    FObjectEditorUtils::SetPropertyValue (CurrentAsset, TEXT ("VirtualTextureStreaming"), 0);
+            //}
+        }
+
+        static void ConvertTextureVirtualTo2dTest (const UTexture *const PTexObj)
+        {
+            const FAssetToolsModule &AssetToolsModule =
+                FModuleManager::Get ().LoadModuleChecked<FAssetToolsModule> ("AssetTools");
+
+            // Package Var
+            FString TextureName;
+            FString PackageName;
+            const FString DefaultSuffix = TEXT ("");
+
+            // Build valid package name
+            AssetToolsModule.Get ().CreateUniqueAssetName (PTexObj->GetOutermost ()->GetName (),
+                DefaultSuffix, PackageName, TextureName);
+            const FString PackagePath = FPackageName::GetLongPackagePath (PackageName);
+
+            // Create UPackage --> Auto ptr management
+            UPackage *Package = CreatePackage (*PackagePath);
+            Package->FullyLoad ();
+
+            // Create Texture Asset
+            UTexture2D *NewTexture = NewObject<UTexture2D> (Package, *TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
+            NewTexture->AddToRoot (); // NO GC!
+
+            // Updating Texture & mark it as unsaved
+            NewTexture->UpdateResource ();
+            Package->MarkPackageDirty ();
+        }
+
+    };
+
+}
+
+namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
+{
+    bool FUTextureAssetProcessor_AutoSetTexFormat::bTagRuleExist = false;
+    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_SRGB = TSet<FString> ();
+    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_Normal = TSet<FString> ();
+    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_Mask = TSet<FString> ();
+    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_ForceLinear = TSet<FString> ();
+}
+
 
 
 /* Menu Commands */
 
-namespace  TextureAssetActionListenerInterior
+namespace  FTextureAssetActionListener_Internal
 {
+    using namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal;
     class MineAssetCtxMenuCommands final : public TCommands<MineAssetCtxMenuCommands>
     {
     public:
@@ -231,7 +343,7 @@ namespace  TextureAssetActionListenerInterior
 
             MappingCommand (CommandList, SelectedAssets);
 
-            if (CheckSelectedTypeTarget<UTexture>(SelectedAssets)) {
+            if (CheckSelectedTypeTarget<UTexture>(SelectedAssets,true)) {
                 // Add the Static actions sub-menu extender
                 Extender->AddMenuExtension (
                     "GetAssetActions",
@@ -276,18 +388,21 @@ namespace  TextureAssetActionListenerInterior
 
 
         /**
-         * @brief : Check if target type in current selections
-         * @tparam : Should derived from UObject
-         * @param  SelectedAssets : Current Selections
-         * @return : return true if target type in current selections
+         * @brief :                     Check if target type in current selections
+         * @tparam :                    Should derived from UObject
+         * @param   SelectedAssets :    Current Selections
+         * @param   bCanCast :          Test if Asset Can cast to target Type
+         * @return :                    return true if target type in current selections
          */
         template<typename T>
-        static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets)
+        static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets, bool bCanCast = false)
         {
             bool bCurrentType = false;
+            bool bCanCastType = false;
             for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
                 const FAssetData &Asset = *AssetIt;
-                bCurrentType = bCurrentType || (Asset.AssetClass == T::StaticClass ()->GetFName ());
+                if (bCanCast) bCanCastType = Cast<T> (Asset.GetAsset ()) != nullptr;
+                bCurrentType = bCurrentType || (Asset.AssetClass == T::StaticClass ()->GetFName ()) || bCanCastType;
             }
             return bCurrentType;
         }
@@ -335,12 +450,12 @@ void FTextureAssetActionListener::InstallHooks ()
 {
     UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
     // register commands
-    TextureAssetActionListenerInterior::MineAssetCtxMenuCommands::Register ();
+    FTextureAssetActionListener_Internal::MineAssetCtxMenuCommands::Register ();
 
     // Declare Delegate 
     ContentBrowserExtenderDelegate =
         FContentBrowserMenuExtender_SelectedAssets::CreateStatic (
-            &TextureAssetActionListenerInterior::
+            &FTextureAssetActionListener_Internal::
             FMineContentBrowserExtensions_SelectedAssets::
             OnExtendContentBrowserAssetSelectionMenu
         );

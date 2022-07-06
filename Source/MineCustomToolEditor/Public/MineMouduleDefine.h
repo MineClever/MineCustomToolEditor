@@ -25,3 +25,8 @@ DECLARE_LOG_CATEGORY_EXTERN (LogMineCustomToolEditor, Log, All);
     #define MINE_EDITOR_CUSTOM_DATA_CAN_REIMPORT
     #define MINE_EDITOR_CUSTOM_DATA_CAN_NEW
 #endif
+
+
+#ifndef  ELIF
+#define ELIF else if
+#endif
