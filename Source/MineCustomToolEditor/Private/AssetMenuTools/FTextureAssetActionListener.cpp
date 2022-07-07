@@ -283,7 +283,9 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     RawFileData.Append (StbImgDataPtr.Get (), SizeX  * SizeY * LPixelFormat.BlockBytes);
                     bStbLib = true;
                     stbi_image_free (StbImgDataPtr.Get ());
-                } else bStbLib = false;
+                }
+                else return nullptr;
+
             }
             else if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath)) 
             {
