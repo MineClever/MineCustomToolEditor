@@ -403,10 +403,10 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             Mip->BulkData.Unlock ();
             NewTexture->UpdateResource ();
             // To initialize the data in a non-transient field 
-            NewTexture->Source.Init (InSizeX, InSizeY,
-                1, 1,
-                ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
-            );
+            //NewTexture->Source.Init (InSizeX, InSizeY,
+            //    1, 1,
+            //    ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
+            //);
 
             return NewTexture;
         }
