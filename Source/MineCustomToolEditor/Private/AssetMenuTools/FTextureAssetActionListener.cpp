@@ -255,7 +255,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             TArray<uint8> RawFileData;
             bool bStbLib = false;
             int StbImgX=0, StbImgY=0, StbImgChannels=0;
-            if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath)) {
+            if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath) || ImageExtName.Contains(TEXT("tga"))) {
                 // use stb to load image raw data
                 
                 TSharedPtr<unsigned char> const StbImgDataPtr = MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &StbImgX, &StbImgY, &StbImgChannels, 4));
@@ -276,7 +276,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 // Make Texture2D
                 UTexture2D *Texture = nullptr;
                 TArray<uint8> UncompressedRGBA;
-                uint32 SizeX, SizeY;
+                uint32 SizeX=0, SizeY=0;
 
                 IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
                 EImageFormat const ImgInputFormat =
