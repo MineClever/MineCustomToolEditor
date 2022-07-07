@@ -284,11 +284,13 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
 
                 // Reformat Pixel Data
-                #define IF_USE_STB_LIB if (bStbLib) {\
-                                    SizeX = StbImgX; \
-                                    SizeY = StbImgY; \
-                                    UncompressedRGBA = RawFileData; \
-                                    }\
+
+                // Marco to Stb Lib
+                #define IF_USE_STB_LIB_EL_NUL if (bStbLib) {    \
+                                        SizeX = StbImgX;        \
+                                        SizeY = StbImgY;        \
+                                        UncompressedRGBA = RawFileData; \
+                                       } else return nullptr
 
                 if (ImageWrapper.IsValid ())
                 {
@@ -300,51 +302,19 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                         SizeY = ImageWrapper->GetHeight ();
                     } else
                     {
-                        IF_USE_STB_LIB
-                        else return nullptr;
+                        IF_USE_STB_LIB_EL_NUL;
                     }
                 } else
                 {
-                    IF_USE_STB_LIB
-                    else return nullptr;
+                    IF_USE_STB_LIB_EL_NUL;
                 }
-                # undef IF_USE_STB_LIB
+                # undef IF_USE_STB_LIB_EL_NUL
 
                 // Create new texture pointer           
                 UPackage *TexturePackage = CreatePackage (*LongPackageName);
                 TexturePackage->FullyLoad ();
 
                 Texture = CreateTexture (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
-
-                #pragma region Build_Texture_Object
-                // uint32 const PixelSize = SizeX * SizeY * LPixelFormat.BlockBytes;
-                //Texture = NewObject<UTexture2D> (TexturePackage, FName (*ImageName), RF_Public | RF_Standalone | RF_MarkAsRootSet);
-
-                //Texture->PlatformData = new FTexturePlatformData ();
-                //Texture->PlatformData->SizeX = SizeX;
-                //Texture->PlatformData->SizeY = SizeY;
-                //Texture->PlatformData->SetNumSlices (1);
-                //Texture->PlatformData->PixelFormat = PF_B8G8R8A8;
-
-                //// Determine whether it is a power of 2 to use mipmap
-                //if ((SizeX & (SizeX - 1) || (SizeY & (SizeY - 1))))
-                //    Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-
-                //// Allocate first mipmap. (Mipmap0)
-                //TSharedPtr<FTexture2DMipMap> const Mip = MakeShareable (new FTexture2DMipMap ());
-                //Texture->PlatformData->Mips.Add (Mip.Get ());
-                //Mip->SizeX = SizeX;
-                //Mip->SizeY = SizeY;
-
-                //// Lock the texture so that it can be modified
-                //Mip->BulkData.Lock (LOCK_READ_WRITE);
-                //uint8 *TextureData = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
-                //FMemory::Memcpy (TextureData, UncompressedRGBA.GetData (), PixelSize);
-                //Mip->BulkData.Unlock ();
-
-                //Texture->Source.Init (SizeX, SizeY, 1, 1, ETextureSourceFormat::TSF_BGRA8, UncompressedRGBA.GetData ());
-                //Texture->UpdateResource ();
-                #pragma endregion Build_Texture_Object
 
                 // Create Asset
                 TexturePackage->MarkPackageDirty ();
@@ -374,7 +344,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 return nullptr;
             }
 
-            UTexture2D *NewTexture = NewObject<UTexture2D> (Outer, TextureName, RF_Transient | RF_Public | RF_Standalone | RF_MarkAsRootSet);
+            UTexture2D *NewTexture = NewObject<UTexture2D> (Outer, TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
             TSharedPtr<FTexturePlatformData> const LPlatformData = MakeShareable (new FTexturePlatformData ());
 
             NewTexture->PlatformData = LPlatformData.Get();
