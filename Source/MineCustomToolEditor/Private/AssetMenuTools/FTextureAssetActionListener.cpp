@@ -109,7 +109,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool bNorm = false;
             bool bMask = false;
             bool bForceLinear = false;
-            bool const bSmallSize = false;
+            bool bSmallSize = false;
             bool bVirtual = false;
 #pragma endregion TextureObjectProperties
 
@@ -198,11 +198,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
             if (bVirtualTex && bConvertVirtualTex)
             {
-                ConvertTextureVirtualTo2d (PTexObj);
+                ConvertTextureVirtualTo2dTex (PTexObj);
             }
         }
 
-        static void ConvertTextureVirtualTo2d (UTexture* const PTexObj)
+        static void ConvertTextureVirtualTo2dTex (UTexture* const PTexObj)
         {
             //const FAssetToolsModule &AssetToolsModule =
             //    FModuleManager::Get ().LoadModuleChecked<FAssetToolsModule> ("AssetTools");
@@ -223,27 +223,28 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 {
 
                     // Make a new package name by Image path name
-                    FString ImageName, PackageDirPath, UnusedPath, PackageName, CurrentPackageFullPath = PTexObj->GetOutermost ()->GetName ();
+                    FString ImageName, PackageDirPath, UnusedPath, LongPackageName, CurrentPackageFullPath = PTexObj->GetOutermost ()->GetName ();
                     FPaths::Split (ImageFilePath, UnusedPath, ImageName, UnusedPath);
                     FPaths::Split (CurrentPackageFullPath, PackageDirPath, UnusedPath, UnusedPath);
-                    PackageName = FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName);
+                    FPackageName::TryConvertFilenameToLongPackageName (FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName), LongPackageName);
 
                     // Create New Texture Asset
-                    UE_LOG (LogMineCustomToolEditor,Warning,TEXT("ImageFilePath : %s ,PackageName : %s"), *ImageFilePath, *PackageName);
-                    UTexture2D* const NewTextureObject = CreateTexture(ImageFilePath, PackageName);
+                    UE_LOG (LogMineCustomToolEditor,Warning,TEXT("ImageFilePath : %s ,PackageName : %s"), *ImageFilePath, *LongPackageName);
+                    UTexture2D* const NewTextureObject = CreateTexture(ImageFilePath, LongPackageName);
+
                     // Reformat
                     if (NewTextureObject != nullptr && NewTextureObject->IsValidLowLevel())
                         ConvertProcessor (NewTextureObject,false);
                 }
             }
-        } // End of ConvertTextureVirtualTo2d
+        } // End of ConvertTextureVirtualTo2dTex
 
         static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
         {
 
             // Get ImageName from LongPicturePath
             FString ImageName, ImageDirPath, ImageExtName;
-            //LongPicturePath.Split(TEXT("/"), nullptr, &ImageName,ESearchCase::IgnoreCase,ESearchDir::FromEnd);
+
             FPaths::Split (LongPicturePath, ImageDirPath, ImageName, ImageExtName);
             if (!FPlatformFileManager::Get ().GetPlatformFile ().FileExists (*LongPicturePath)) {
                 UE_LOG(LogMineCustomToolEditor,Error,TEXT("Can't find image file : %s"), *LongPicturePath)
@@ -254,61 +255,67 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             FPixelFormatInfo const LPixelFormat = GPixelFormats[PF_B8G8R8A8];
             TArray<uint8> RawFileData;
             bool bStbLib = false;
-            int StbImgX=0, StbImgY=0, StbImgChannels=0;
-            if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath) || ImageExtName.Contains(TEXT("tga"))) {
-                // use stb to load image raw data
-                
-                TSharedPtr<unsigned char> const StbImgDataPtr = MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &StbImgX, &StbImgY, &StbImgChannels, 4));
-                if (StbImgDataPtr.IsValid())
-                {
-                    RawFileData.Append (StbImgDataPtr.Get (), StbImgX * StbImgY * LPixelFormat.BlockBytes);
+            int SizeX =0, SizeY=0, ImgChannels=0;
+
+            // Use Stb lib to load Tga file
+            if (ImageExtName.Equals (TEXT ("tga"), ESearchCase::IgnoreCase))
+                bStbLib = true;
+
+            if (bStbLib)
+            {
+                TSharedPtr<unsigned char> const StbImgDataPtr = 
+                    MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &SizeX , &SizeY, &ImgChannels, 4));
+                if (StbImgDataPtr.IsValid ()) {
+                    RawFileData.Append (StbImgDataPtr.Get (), SizeX  * SizeY * LPixelFormat.BlockBytes);
                     bStbLib = true;
                     stbi_image_free (StbImgDataPtr.Get ());
-                } else
-                {
-                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't read image file : %s"), *LongPicturePath)
-                    return nullptr;
-                }
+                } else bStbLib = false;
+            }
+            else if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath)) 
+            {
+                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't read image file : %s"), *LongPicturePath)
+                return nullptr;
             }
 
 
+            // Reformat Pixel Data
             if (RawFileData.Num()>0) {
                 // Make Texture2D
                 UTexture2D *Texture = nullptr;
                 TArray<uint8> UncompressedRGBA;
-                uint32 SizeX=0, SizeY=0;
 
-                IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
-                EImageFormat const ImgInputFormat =
-                    ImageWrapperModule.DetectImageFormat (RawFileData.GetData (), RawFileData.Num ());
-                TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
-
-                // Reformat Pixel Data
-
-                // Marco to Stb Lib
-                #define IF_USE_STB_LIB_EL_NUL if (bStbLib) {    \
-                                        SizeX = StbImgX;        \
-                                        SizeY = StbImgY;        \
-                                        UncompressedRGBA = RawFileData; \
-                                       } else return nullptr
-
-                if (ImageWrapper.IsValid ())
+                if (!bStbLib) // Use unreal ImageWrapper
                 {
-                    bool const bHasSetCompressed = ImageWrapper->SetCompressed (RawFileData.GetData (), RawFileData.Num ());
-                    bool const bHasGetRaw = ImageWrapper->GetRaw (ERGBFormat::BGRA, 8, UncompressedRGBA);
-                    if (bHasSetCompressed && bHasGetRaw) // Use Unreal Method
+                    IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
+                    EImageFormat const ImgInputFormat =
+                        ImageWrapperModule.DetectImageFormat (RawFileData.GetData (), RawFileData.Num ());
+                    TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
+
+                    if (ImageWrapper.IsValid ())
                     {
-                        SizeX = ImageWrapper->GetWidth ();
-                        SizeY = ImageWrapper->GetHeight ();
-                    } else
-                    {
-                        IF_USE_STB_LIB_EL_NUL;
-                    }
-                } else
+                        bool const bHasSetCompressed = ImageWrapper->SetCompressed (RawFileData.GetData (), RawFileData.Num ());
+                        bool const bHasGetRaw = ImageWrapper->GetRaw (ERGBFormat::BGRA, 8, UncompressedRGBA);
+                        if (bHasSetCompressed && bHasGetRaw) // Use Unreal Method
+                        {
+                            SizeX = ImageWrapper->GetWidth ();
+                            SizeY = ImageWrapper->GetHeight ();
+                        }
+                    } // End of ImageWrapper.IsValid ()
+                } // End of (!bStbLib)
+                else
                 {
-                    IF_USE_STB_LIB_EL_NUL;
+                    UncompressedRGBA = RawFileData;
                 }
-                # undef IF_USE_STB_LIB_EL_NUL
+
+
+
+                // Make Sure Valid parameters
+                if (SizeX <= 0 || SizeY <= 0 ||
+                    (SizeX % LPixelFormat.BlockSizeX) != 0 ||
+                    (SizeX % LPixelFormat.BlockSizeY) != 0) {
+                    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Invalid parameters specified for CreateTexture()"));
+                    return nullptr;
+                }
 
                 // Create new texture pointer           
                 UPackage *TexturePackage = CreatePackage (*LongPackageName);
@@ -320,10 +327,10 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 TexturePackage->MarkPackageDirty ();
 
                 // Register Asset
-                // FAssetRegistryModule::AssetCreated (Texture);
+                FAssetRegistryModule::AssetCreated (Texture);
 
                 // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
-                // FString const PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
+                FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
 
                 //UPackage::SavePackage (TexturePackage, Texture, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *PackageFileName.ToString());
 
@@ -331,16 +338,17 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 UPackage::Save (TexturePackage,
                     Texture,
                     EObjectFlags::RF_Public | ::RF_Standalone,
-                    Texture->GetPathName ().GetCharArray ().GetData (),
+                    *PackageFileName,
                     GError,
                     nullptr,
                     true,
                     true,
-                    SAVE_Async
+                    SAVE_NoError
                 );
                 return Texture;
 
-            } else
+            }
+            else
             {
                 UE_LOG (LogMineCustomToolEditor, Error, TEXT ("NoData has been loaded"));
                 return nullptr;
@@ -348,44 +356,43 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
         }
 
-        static UTexture2D *CreateTexture (UObject *Outer, const TArray<uint8> &PixelData, int32 InSizeX, int32 InSizeY, FPixelFormatInfo InPixelFormat, FName TextureName)
+        static UTexture2D * CreateTexture (UObject *Outer, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo & InPixelFormat, const FName &TextureName)
         {
             // Shamelessly copied from UTexture2D::CreateTransient with a few modifications
-            if (InSizeX <= 0 || InSizeY <= 0 ||
-                (InSizeX % InPixelFormat.BlockSizeX) != 0 ||
-                (InSizeY % InPixelFormat.BlockSizeY) != 0) {
-                UE_LOG (LogMineCustomToolEditor,Warning, TEXT ("Invalid parameters specified for CreateTexture()"));
-                return nullptr;
-            }
 
             UTexture2D *NewTexture = NewObject<UTexture2D> (Outer, TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
-            TSharedPtr<FTexturePlatformData> const LPlatformData = MakeShareable (new FTexturePlatformData ());
-
-            NewTexture->PlatformData = LPlatformData.Get();
+            NewTexture->AddToRoot ();
+            FTexturePlatformData* const LPlatformData = new FTexturePlatformData ();
+            NewTexture->PlatformData = LPlatformData;
             NewTexture->PlatformData->SizeX = InSizeX;
+            NewTexture->PlatformData->SetNumSlices (1);
             NewTexture->PlatformData->SizeY = InSizeY;
             NewTexture->PlatformData->PixelFormat = InPixelFormat.UnrealFormat;
-            NewTexture->VirtualTextureStreaming = 0;
 
             //// Determine whether it is a power of 2 to use mipmap
             if ((InSizeX & (InSizeX - 1) || (InSizeY & (InSizeY - 1))))
                 NewTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
 
+            uint32 const PixelSize = InSizeX * InSizeY * InPixelFormat.BlockBytes;
+
             // Allocate first mipmap. (Mipmap0)
-            TSharedPtr<FTexture2DMipMap> const Mip = MakeShareable (new FTexture2DMipMap ());
-            NewTexture->PlatformData->Mips.Add (Mip.Get ());
+            FTexture2DMipMap* Mip = new FTexture2DMipMap ();
+            NewTexture->PlatformData->Mips.Add (Mip);
             Mip->SizeX = InSizeX;
             Mip->SizeY = InSizeY;
 
             // Lock the texture so that it can be modified
             Mip->BulkData.Lock (LOCK_READ_WRITE);
-            uint32 const PixelSize = InSizeX * InSizeY * InPixelFormat.BlockBytes;
-
-            uint8 *TextureData = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
-            FMemory::Memcpy (TextureData, PixelData.GetData (), PixelSize);
+            uint8* TextureDataPtr = static_cast<uint8*>(Mip->BulkData.Realloc(PixelSize));
+            FMemory::Memcpy (TextureDataPtr, PixelData.GetData (), PixelSize); // copy to mip0
             Mip->BulkData.Unlock ();
-
             NewTexture->UpdateResource ();
+            // To initialize the data in a non-transient field 
+            NewTexture->Source.Init (InSizeX, InSizeY,
+                1, 1,
+                ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
+            );
+
             return NewTexture;
         }
     };
