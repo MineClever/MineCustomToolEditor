@@ -336,6 +336,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 TexturePackage->FullyLoad ();
 
                 Texture = CreateTexture (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
+                Texture->AssetImportData->AddFileName (LongPicturePath,0);
 
                 // Create Asset
                 TexturePackage->MarkPackageDirty ();
@@ -378,8 +379,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             NewTexture->AddToRoot ();
             FTexturePlatformData* const LPlatformData = new FTexturePlatformData ();
             NewTexture->PlatformData = LPlatformData;
-            NewTexture->PlatformData->SizeX = InSizeX;
             NewTexture->PlatformData->SetNumSlices (1);
+            NewTexture->PlatformData->SizeX = InSizeX;
             NewTexture->PlatformData->SizeY = InSizeY;
             NewTexture->PlatformData->PixelFormat = InPixelFormat.UnrealFormat;
 
