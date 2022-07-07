@@ -200,6 +200,19 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             {
                 ConvertTextureVirtualTo2dTex (PTexObj);
             }
+
+            // Save!!
+            PTexObj->GetPackage ()->MarkPackageDirty ();
+            UPackage::Save (PTexObj->GetPackage (),
+                PTexObj,
+                EObjectFlags::RF_Public | ::RF_Standalone,
+                *PTexObj->GetPackage ()->GetName (),
+                GError,
+                nullptr,
+                true,
+                true,
+                SAVE_NoError | SAVE_Async
+            );
         }
 
         static void ConvertTextureVirtualTo2dTex (UTexture* const PTexObj)
@@ -233,22 +246,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     UTexture2D* const NewTextureObject = CreateTexture(ImageFilePath, LongPackageName);
 
                     // Reformat
-                    if (NewTextureObject != nullptr && NewTextureObject->IsValidLowLevel())
+                    if (NewTextureObject != nullptr)
                         ConvertProcessor (NewTextureObject,false);
                 }
             }
-            PTexObj->GetPackage ()->MarkPackageDirty ();
-            // Save!!
-            UPackage::Save (PTexObj->GetPackage (),
-                PTexObj,
-                EObjectFlags::RF_Public | ::RF_Standalone,
-                *PTexObj->GetPackage ()->GetName (),
-                GError,
-                nullptr,
-                true,
-                true,
-                SAVE_NoError | SAVE_Async
-            );
+
         } // End of ConvertTextureVirtualTo2dTex
 
         static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
@@ -355,7 +357,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     nullptr,
                     true,
                     true,
-                    SAVE_NoError | SAVE_Async
+                    SAVE_Async
                 );
                 return Texture;
 
