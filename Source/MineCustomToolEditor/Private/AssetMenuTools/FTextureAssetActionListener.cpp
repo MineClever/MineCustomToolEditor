@@ -237,6 +237,18 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                         ConvertProcessor (NewTextureObject,false);
                 }
             }
+            PTexObj->GetPackage ()->MarkPackageDirty ();
+            // Save!!
+            UPackage::Save (PTexObj->GetPackage (),
+                PTexObj,
+                EObjectFlags::RF_Public | ::RF_Standalone,
+                *PTexObj->GetPackage ()->GetName (),
+                GError,
+                nullptr,
+                true,
+                true,
+                SAVE_NoError | SAVE_Async
+            );
         } // End of ConvertTextureVirtualTo2dTex
 
         static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
@@ -343,7 +355,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     nullptr,
                     true,
                     true,
-                    SAVE_NoError
+                    SAVE_NoError | SAVE_Async
                 );
                 return Texture;
 
@@ -356,7 +368,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
         }
 
-        static UTexture2D * CreateTexture (UObject *Outer, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo & InPixelFormat, const FName &TextureName)
+        static UTexture2D *CreateTexture (UObject *Outer, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo & InPixelFormat, const FName &TextureName)
         {
             // Shamelessly copied from UTexture2D::CreateTransient with a few modifications
 
