@@ -279,29 +279,29 @@ public:
 		///
 		///	FAssetsProcessorFormSelection_UStaticMesh_PrintName
 
-	    {
-	        TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_PrintName> const StaticMeshBaseProcessor =
-               MakeShareable(new FAssetsProcessorFormSelection_UStaticMesh_PrintName);
+	    //{
+	    //    TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_PrintName> const StaticMeshBaseProcessor =
+     //          MakeShareable(new FAssetsProcessorFormSelection_UStaticMesh_PrintName);
 
-	        // Add current selection to AssetsProcessor
-	        StaticMeshBaseProcessor->SelectedAssets = SelectedAssets;
+	    //    // Add current selection to AssetsProcessor
+	    //    StaticMeshBaseProcessor->SelectedAssets = SelectedAssets;
 
-	        // Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
-	        FUIAction const Action_PrintName_ProcessFromAssets (
-                FExecuteAction::CreateStatic (
-                    &FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
-                    StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshBaseProcessor))
-            );
+	    //    // Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+	    //    FUIAction const Action_PrintName_ProcessFromAssets (
+     //           FExecuteAction::CreateStatic (
+     //               &FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+     //               StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshBaseProcessor))
+     //       );
 
-	        // Add to Menu
-	        MenuBuilder.AddMenuEntry (
-                LOCTEXT ("CBE_StaticMesh_PrintName", "Copy Selected Assets name"),
-                LOCTEXT ("CBE_StaticMesh_PrintName_ToolTips", "Copy All selected assets name from selected"),
-                FSlateIcon (),
-                Action_PrintName_ProcessFromAssets,
-                NAME_None,
-                EUserInterfaceActionType::Button);
-	    }
+	    //    // Add to Menu
+	    //    MenuBuilder.AddMenuEntry (
+     //           LOCTEXT ("CBE_StaticMesh_PrintName", "Copy Selected Assets name"),
+     //           LOCTEXT ("CBE_StaticMesh_PrintName_ToolTips", "Copy All selected assets name from selected"),
+     //           FSlateIcon (),
+     //           Action_PrintName_ProcessFromAssets,
+     //           NAME_None,
+     //           EUserInterfaceActionType::Button);
+	    //}
 
 
 		//////////////////////////////////////////////////////////////

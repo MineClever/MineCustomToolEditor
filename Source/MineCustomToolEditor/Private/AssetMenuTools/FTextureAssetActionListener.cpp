@@ -1,10 +1,14 @@
 ﻿#include "AssetMenuTools/FTextureAssetActionListener.h"
-#include "ObjectEditorUtils.h"
 #include "AssetToolsModule.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "EditorFramework/AssetImportData.h"
 #include "Engine/Private/VT/VirtualTextureBuiltData.h"
-#include "VT/VirtualTextureBuildSettings.h"
+#include "Factories/TextureFactory.h"
+#include "Misc/FileHelper.h"
+#include "RHI.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
 
@@ -103,7 +107,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool bNorm = false;
             bool bMask = false;
             bool bForceLinear = false;
-            bool bSmallSize = false;
+            bool const bSmallSize = false;
             bool bVirtual = false;
 #pragma endregion TextureObjectProperties
 
@@ -203,65 +207,116 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             // Find all inputted path
             const UAssetImportData * TexImportData = PTexObj->AssetImportData;
-            const TArray<FString> filesToImport = TexImportData->ExtractFilenames ();
+            const TArray<FString> FilesToImport = TexImportData->ExtractFilenames ();
 
-            if (filesToImport.Num()<=1)
+            if (FilesToImport.Num()<=1)
             {
                 // Reflector Method
                 PTexObj->VirtualTextureStreaming = 0;
                 //FObjectEditorUtils::SetPropertyValue (PTexObj,TEXT("VirtualTextureStreaming"),0);
             }
+            else
+            {
+                for (auto ImageFilePath : FilesToImport)
+                {
 
-            // Package Var
-            FString TextureName;
-            FString PackageName;
-            const FString DefaultSuffix = TEXT ("");
 
-            // Build valid package name
-            AssetToolsModule.Get ().CreateUniqueAssetName (PTexObj->GetOutermost ()->GetName (),
-                DefaultSuffix, PackageName, TextureName);
-            FString PackagePath = FPackageName::GetLongPackagePath (PackageName);
-            PackagePath = FPaths::GetPath (PackagePath);
+                    // Make a new package name by Image path name
+                    FString ImageName, PackageDirPath, UnusedPath, PackageName, CurrentPackageFullPath = PTexObj->GetOutermost ()->GetName ();
+                    FPaths::Split (ImageFilePath, UnusedPath, ImageName, UnusedPath);
+                    FPaths::Split (CurrentPackageFullPath, PackageDirPath, UnusedPath, UnusedPath);
+                    PackageName = FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName);
 
-            // Texture Settings
-            UAutomatedAssetImportData *importData = NewObject<UAutomatedAssetImportData> ();
-            importData->bReplaceExisting = true;
-            importData->DestinationPath = PackagePath;
-            importData->Filenames = filesToImport;
-            auto importedAssets = AssetToolsModule.Get ().ImportAssetsAutomated (importData);
-            //for (auto CurrentAsset: importedAssets)
-            //{
-            //    FObjectEditorUtils::SetPropertyValue (CurrentAsset, TEXT ("VirtualTextureStreaming"), 0);
-            //}
-        }
+                    // Create New Texture Asset
+                    UTexture2D* const NewTextureObject = CreateTexture(ImageFilePath, PackageName);
+                    // Reformat
+                    ConvertProcessor (NewTextureObject,false);
+                }
+            }
+        } // End of ConvertTextureVirtualTo2d
 
-        static void ConvertTextureVirtualTo2dTest (const UTexture *const PTexObj)
+        static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
         {
-            const FAssetToolsModule &AssetToolsModule =
-                FModuleManager::Get ().LoadModuleChecked<FAssetToolsModule> ("AssetTools");
 
-            // Package Var
-            FString TextureName;
-            FString PackageName;
-            const FString DefaultSuffix = TEXT ("");
+            UTexture2D *Texture = nullptr;
+            // Get ImageName from LongPicturePath
+            FString ImageName, ImageDirPath, ImageExtName;
+            //LongPicturePath.Split(TEXT("/"), nullptr, &ImageName,ESearchCase::IgnoreCase,ESearchDir::FromEnd);
+            FPaths::Split (LongPicturePath, ImageDirPath, ImageName, ImageExtName);
+            if (!FPlatformFileManager::Get ().GetPlatformFile ().FileExists (*LongPicturePath)) {
+                return nullptr;
+            }
 
-            // Build valid package name
-            AssetToolsModule.Get ().CreateUniqueAssetName (PTexObj->GetOutermost ()->GetName (),
-                DefaultSuffix, PackageName, TextureName);
-            const FString PackagePath = FPackageName::GetLongPackagePath (PackageName);
 
-            // Create UPackage --> Auto ptr management
-            UPackage *Package = CreatePackage (*PackagePath);
-            Package->FullyLoad ();
+            // Read Local Image to Texture
 
-            // Create Texture Asset
-            UTexture2D *NewTexture = NewObject<UTexture2D> (Package, *TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
-            NewTexture->AddToRoot (); // NO GC!
+            TArray<uint8> RawFileData;
+            if (!FFileHelper::LoadFileToArray (RawFileData, *LongPicturePath)) {
+                return nullptr;
+            }
 
-            // Updating Texture & mark it as unsaved
-            NewTexture->UpdateResource ();
-            Package->MarkPackageDirty ();
+            IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
+            EImageFormat const ImgInputFormat = 
+                ImageWrapperModule.DetectImageFormat(RawFileData.GetData(), RawFileData.GetAllocatedSize());
+            TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
+            
+
+            if (ImageWrapper.IsValid () && ImageWrapper->SetCompressed (RawFileData.GetData (), RawFileData.Num ())) {
+                TArray64<uint8> UncompressedRGBA;
+                if (ImageWrapper->GetRaw (ERGBFormat::BGRA, 8, UncompressedRGBA)) {
+                    uint32 SizeX = ImageWrapper->GetWidth ();
+                    uint32 SizeY = ImageWrapper->GetHeight ();
+
+                    FPixelFormatInfo const LPixelFormat = GPixelFormats[PF_B8G8R8A8];
+                    uint32 const PixelSize = SizeX * SizeY * LPixelFormat.BlockBytes;
+
+                    if (SizeX > 0 && SizeY > 0 && (SizeX % LPixelFormat.BlockSizeX) == 0 && (SizeY % LPixelFormat.BlockSizeY) == 0) {
+                        // Create new texture pointer           
+                        UPackage *TexturePackage = CreatePackage (*LongPackageName);
+                        TexturePackage->FullyLoad ();
+                        Texture = NewObject<UTexture2D> (TexturePackage, FName (*ImageName), RF_Public | RF_Standalone | RF_MarkAsRootSet);
+
+                        Texture->PlatformData = new FTexturePlatformData ();
+                        Texture->PlatformData->SizeX = SizeX;
+                        Texture->PlatformData->SizeY = SizeY;
+                        Texture->PlatformData->SetNumSlices (1);
+                        Texture->PlatformData->PixelFormat = PF_B8G8R8A8;
+
+                        // Determine whether it is a power of 2 to use mipmap
+                        if ((SizeX & (SizeX - 1) || (SizeY & (SizeY - 1))))
+                            Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+
+                        // Allocate first mipmap. (Mipmap0)
+                        TSharedPtr<FTexture2DMipMap> const Mip = MakeShareable (new FTexture2DMipMap ());
+                        Texture->PlatformData->Mips.Add (Mip.Get ());
+                        Mip->SizeX = SizeX;
+                        Mip->SizeY = SizeY;
+
+                        // Lock the texture so that it can be modified
+                        Mip->BulkData.Lock (LOCK_READ_WRITE);
+                        uint8 *TextureData = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
+                        FMemory::Memcpy (TextureData, UncompressedRGBA.GetData (), PixelSize);
+                        Mip->BulkData.Unlock ();
+
+                        Texture->Source.Init (SizeX, SizeY, 1, 1, ETextureSourceFormat::TSF_BGRA8, UncompressedRGBA.GetData ());
+                        Texture->UpdateResource ();
+
+                        // Create Asset
+                        TexturePackage->MarkPackageDirty ();
+                        // Register Asset
+                        FAssetRegistryModule::AssetCreated (Texture);
+                        // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
+                        FString const PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName, FPackageName::GetAssetPackageExtension ());
+
+                        UPackage::SavePackage (TexturePackage, Texture, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *PackageFileName);
+                    }
+                }
+            } else
+                UE_LOG(LogMineCustomToolEditor,Error,TEXT("Unknown Image Format To Read"));
+
+            return Texture;
         }
+
 
     };
 

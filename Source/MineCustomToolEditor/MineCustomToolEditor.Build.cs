@@ -44,6 +44,7 @@ public class MineCustomToolEditor : ModuleRules
                 "AnimGraph",
                 "ComponentVisualizers",
                 "SourceControl",
+				"RHI",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
