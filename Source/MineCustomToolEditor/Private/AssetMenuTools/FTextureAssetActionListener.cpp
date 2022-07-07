@@ -268,20 +268,20 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             // Read Local Image to Texture
             FPixelFormatInfo const LPixelFormat = GPixelFormats[PF_B8G8R8A8];
             TArray<uint8> RawFileData;
-            bool bStbLib = false;
+            bool bUseStbLib = false;
             int SizeX =0, SizeY=0, ImgChannels=0;
 
             // Use Stb lib to load Tga file
             if (ImageExtName.Equals (TEXT ("tga"), ESearchCase::IgnoreCase))
-                bStbLib = true;
+                bUseStbLib = true;
 
-            if (bStbLib)
+            if (bUseStbLib)
             {
                 TSharedPtr<unsigned char> const StbImgDataPtr = 
                     MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &SizeX , &SizeY, &ImgChannels, 4));
                 if (StbImgDataPtr.IsValid ()) {
                     RawFileData.Append (StbImgDataPtr.Get (), SizeX  * SizeY * LPixelFormat.BlockBytes);
-                    bStbLib = true;
+                    bUseStbLib = true;
                     stbi_image_free (StbImgDataPtr.Get ());
                 }
                 else return nullptr;
@@ -300,7 +300,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 UTexture2D *Texture = nullptr;
                 TArray<uint8> UncompressedRGBA;
 
-                if (!bStbLib) // Use unreal ImageWrapper
+                if (!bUseStbLib) // Use unreal ImageWrapper
                 {
                     IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
                     EImageFormat const ImgInputFormat =
