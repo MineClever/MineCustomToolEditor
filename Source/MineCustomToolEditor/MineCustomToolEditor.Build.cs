@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class MineCustomToolEditor : ModuleRules
@@ -15,7 +16,8 @@ public class MineCustomToolEditor : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				// ... add public include paths required here ...
+				Path.Combine(ModuleDirectory,"../ThirdPart/stb"),
+                // ... add public include paths required here ...
 			}
 			);
 				
@@ -45,6 +47,7 @@ public class MineCustomToolEditor : ModuleRules
                 "ComponentVisualizers",
                 "SourceControl",
 				"RHI",
+				"ImageWrapper"
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
