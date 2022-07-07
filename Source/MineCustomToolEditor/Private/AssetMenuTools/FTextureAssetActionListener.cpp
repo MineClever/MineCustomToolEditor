@@ -318,12 +318,26 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
                 // Create Asset
                 TexturePackage->MarkPackageDirty ();
-                // Register Asset
-                FAssetRegistryModule::AssetCreated (Texture);
-                // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
-                FString const PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName, FPackageName::GetAssetPackageExtension ());
 
-                UPackage::SavePackage (TexturePackage, Texture, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *PackageFileName);
+                // Register Asset
+                // FAssetRegistryModule::AssetCreated (Texture);
+
+                // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
+                // FString const PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
+
+                //UPackage::SavePackage (TexturePackage, Texture, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *PackageFileName.ToString());
+
+                // Save!!
+                UPackage::Save (TexturePackage,
+                    Texture,
+                    EObjectFlags::RF_Public | ::RF_Standalone,
+                    Texture->GetPathName ().GetCharArray ().GetData (),
+                    GError,
+                    nullptr,
+                    true,
+                    true,
+                    SAVE_Async
+                );
                 return Texture;
 
             } else
