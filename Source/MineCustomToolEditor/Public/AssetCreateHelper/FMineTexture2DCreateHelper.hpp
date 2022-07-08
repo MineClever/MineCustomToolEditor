@@ -64,7 +64,7 @@ namespace MineAssetCreateHelperInternal
 
             // Reformat Pixel Data
             if (RawFileData.Num () == 0) {
-                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("NoData has been loaded"));
+                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("No Data has been loaded"));
                 return nullptr;
             }
 

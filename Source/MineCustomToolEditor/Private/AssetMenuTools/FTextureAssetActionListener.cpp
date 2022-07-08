@@ -96,13 +96,13 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
         static void ConvertProcessor (UTexture *PTexObj,const bool bConvertVirtualTex=false)
         {
-#pragma region TextureObjectProperties
+            #pragma region TextureObjectProperties
             bool bSRGB = false;
             bool bNorm = false;
             bool bMask = false;
             bool bForceLinear = false;
             bool bSmallSize = false;
-#pragma endregion TextureObjectProperties
+            #pragma endregion TextureObjectProperties
 
             PTexObj->Modify ();
             // DeferCompression is more easy to change properties
@@ -144,6 +144,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     || (bSRGB && bForceLinear)
                     ) {
                     PTexObj->SRGB = false;
+                    /* Legacy Gamma? */
+                    PTexObj->bUseLegacyGamma = false;
                     break;
                 }
                 if (bSRGB)
@@ -186,12 +188,12 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             TextureCompressionSettings LTempCompressionSettings = TextureCompressionSettings::TC_Default;
             while (true) {
                 if (bSmallSize) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                    LTempCompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
                     PTexObj->MipLoadOptions = ETextureMipLoadOptions::OnlyFirstMip;
                     break;
                 }
                 if (bForceLinear && !bNorm) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                    LTempCompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
                 }
                 if (bForceLinear && bNorm) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
@@ -202,12 +204,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 if (bForceLinear && bMask) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
                 }
-
                 if (bForceLinear) {
-                    break;
-                }
-                if (bNorm && bForceLinear) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
                     break;
                 }
                 if (bNorm) {
@@ -219,7 +216,6 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 break;
             }
             PTexObj->CompressionSettings = LTempCompressionSettings;
-
 
 
             /* Process Virtual texture property */
