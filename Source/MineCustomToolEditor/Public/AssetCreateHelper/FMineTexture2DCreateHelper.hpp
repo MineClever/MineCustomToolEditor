@@ -20,12 +20,12 @@
 
 namespace MineAssetCreateHelperInternal
 {
+#define SWAP_RG
     class FMineTextureAssetCreateHelper
     {
     public:
         static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
         {
-
             // Get ImageName from LongPicturePath
             FString ImageName, ImageDirPath, ImageExtName;
 
@@ -59,7 +59,6 @@ namespace MineAssetCreateHelperInternal
                     //    for (int j=0; j < SizeY; ++j)
                     //    {
                     //        int const Index = j + SizeY * i;
-
                     //        for (int Count=0;Count < LPixelFormat.BlockBytes;++Count)
                     //        {
                     //            uint8 CurrentColor;
@@ -110,7 +109,24 @@ namespace MineAssetCreateHelperInternal
                         }
                     } // End of ImageWrapper.IsValid ()
                 } // End of (!bStbLib)
-                else {
+                else 
+                {
+#ifdef SWAP_RG
+                    bool bSaved = true;
+                    for (int Index = 0; Index < RawFileData.Num (); ++Index) {
+                        if (Index % 2 == 0 && Index >=2) {
+                            if (!bSaved) {
+                                bSaved = true;
+                                continue;
+                            }
+                            if (bSaved) {
+                                RawFileData.Swap (Index, Index-2);
+                                bSaved = false;
+                            }
+                        }
+                    }// End For loop
+#endif
+
                     UncompressedRGBA = RawFileData;
                 }
 
@@ -193,13 +209,13 @@ namespace MineAssetCreateHelperInternal
             uint8 *TextureDataPtr = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
             FMemory::Memcpy (TextureDataPtr, PixelData.GetData (), PixelSize); // copy to mip0
             Mip->BulkData.Unlock ();
-            NewTexture->UpdateResource ();
+            
             // To initialize the data in a non-transient field 
             //NewTexture->Source.Init (InSizeX, InSizeY,
             //    1, 1,
             //    ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
             //);
-
+            NewTexture->UpdateResource ();
             return NewTexture;
         }
     };
