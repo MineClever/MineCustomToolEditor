@@ -20,7 +20,7 @@
 
 namespace MineAssetCreateHelperInternal
 {
-#define SWAP_RG
+
     class FMineTextureAssetCreateHelper
     {
     public:
@@ -50,7 +50,7 @@ namespace MineAssetCreateHelperInternal
                 TSharedPtr<unsigned char> const StbImgDataPtr =
                     MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &SizeX, &SizeY, &ImgChannels, LPixelFormat.BlockBytes));
                 if (StbImgDataPtr.IsValid ()) {
-                    RawFileData.Append ((uint8*)(StbImgDataPtr.Get ()), SizeX * SizeY * LPixelFormat.BlockBytes);
+                    RawFileData.Append (StbImgDataPtr.Get (), SizeX * SizeY * LPixelFormat.BlockBytes);
                     bUseStbLib = true;
                     // stbi_image_free (StbImgDataPtr.Get ());
                 }
@@ -63,97 +63,82 @@ namespace MineAssetCreateHelperInternal
 
 
             // Reformat Pixel Data
-            if (RawFileData.Num () > 0) {
-                // Make Texture2D
-                UTexture2D *Texture = nullptr;
-                TArray<uint8> UncompressedRGBA;
-
-                if (!bUseStbLib) // Use unreal ImageWrapper
-                {
-                    IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
-                    EImageFormat const ImgInputFormat =
-                        ImageWrapperModule.DetectImageFormat (RawFileData.GetData (), RawFileData.Num ());
-                    TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
-
-                    if (ImageWrapper.IsValid ()) {
-                        bool const bHasSetCompressed = ImageWrapper->SetCompressed (RawFileData.GetData (), RawFileData.Num ());
-                        bool const bHasGetRaw = ImageWrapper->GetRaw (ERGBFormat::BGRA, 8, UncompressedRGBA);
-                        if (bHasSetCompressed && bHasGetRaw) // Use Unreal Method
-                        {
-                            SizeX = ImageWrapper->GetWidth ();
-                            SizeY = ImageWrapper->GetHeight ();
-                        }
-                    } // End of ImageWrapper.IsValid ()
-                } // End of (!bStbLib)
-                else 
-                {
-#ifdef SWAP_RG
-                    // Our map was formatted under 4 channels; 
-                    bool bSaved = true;
-                    for (int Index = 0; Index < RawFileData.Num (); ++Index) {
-                        if (Index % 2 == 0 && Index >=2) {
-                            if (!bSaved) {
-                                bSaved = true;
-                                continue;
-                            }
-                            if (bSaved) {
-                                RawFileData.Swap (Index, Index-2);
-                                bSaved = false;
-                            }
-                        }
-                    }// End For loop
-#endif
-
-                    UncompressedRGBA = RawFileData;
-                }
-
-
-
-                // Make Sure Valid parameters
-                if (SizeX <= 0 || SizeY <= 0 ||
-                    (SizeX % LPixelFormat.BlockSizeX) != 0 ||
-                    (SizeX % LPixelFormat.BlockSizeY) != 0) {
-                    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Invalid parameters specified for CreateTexture()"));
-                    return nullptr;
-                }
-
-                // Create new texture pointer           
-                UPackage *TexturePackage = CreatePackage (*LongPackageName);
-                TexturePackage->FullyLoad ();
-
-                Texture = CreateTexture (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
-                Texture->AssetImportData->AddFileName (LongPicturePath, 0);
-
-                // Create Asset
-                TexturePackage->MarkPackageDirty ();
-
-                // Register Asset
-                FAssetRegistryModule::AssetCreated (Texture);
-
-                // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
-                FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
-
-                //UPackage::SavePackage (TexturePackage, Texture, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *PackageFileName.ToString());
-
-                // Save!!
-                UPackage::Save (TexturePackage,
-                    Texture,
-                    EObjectFlags::RF_Public | ::RF_Standalone,
-                    *PackageFileName,
-                    GError,
-                    nullptr,
-                    true,
-                    true,
-                    SAVE_Async | SAVE_NoError
-                );
-                return Texture;
-
-            }
-            else {
+            if (RawFileData.Num () == 0) {
                 UE_LOG (LogMineCustomToolEditor, Error, TEXT ("NoData has been loaded"));
                 return nullptr;
             }
 
+            TArray<uint8> UncompressedRGBA;
+
+            if (!bUseStbLib) // Use unreal ImageWrapper
+            {
+                IImageWrapperModule &ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule> ("ImageWrapper");
+                EImageFormat const ImgInputFormat =
+                    ImageWrapperModule.DetectImageFormat (RawFileData.GetData (), RawFileData.Num ());
+                TSharedPtr<IImageWrapper> const ImageWrapper = ImageWrapperModule.CreateImageWrapper (ImgInputFormat);
+
+                if (ImageWrapper.IsValid ()) {
+                    bool const bHasSetCompressed = ImageWrapper->SetCompressed (RawFileData.GetData (), RawFileData.Num ());
+                    bool const bHasGetRaw = ImageWrapper->GetRaw (ERGBFormat::BGRA, 8, UncompressedRGBA);
+                    if (bHasSetCompressed && bHasGetRaw) // Use Unreal Method
+                    {
+                        SizeX = ImageWrapper->GetWidth ();
+                        SizeY = ImageWrapper->GetHeight ();
+                    }
+                }
+                else
+                {
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't read format : %s"), ImageExtName);
+                    return nullptr;
+                }
+            } // End of (!bStbLib)
+            else {
+                // Swap RGBA-> BGRA; 
+                for (uint32 Index = 0; Index < RawFileData.Num (); Index += 4) {
+                    RawFileData.Swap (Index, Index + 2);
+                }
+
+                UncompressedRGBA = RawFileData;
+            }
+
+            // Make Sure Valid parameters
+            if (SizeX <= 0 || SizeY <= 0 ||
+                (SizeX % LPixelFormat.BlockSizeX) != 0 ||
+                (SizeX % LPixelFormat.BlockSizeY) != 0) {
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Invalid parameters specified for CreateTexture()"));
+                return nullptr;
+            }
+
+            // Create new texture pointer
+            UPackage *TexturePackage = CreatePackage (*LongPackageName);
+            TexturePackage->FullyLoad ();
+
+            // Make Texture2D
+            UTexture2D *Texture = nullptr;
+            Texture = CreateTexture (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
+            Texture->AssetImportData->AddFileName (LongPicturePath, 0);
+
+            // Create Asset
+            TexturePackage->MarkPackageDirty ();
+
+            // Register Asset
+            FAssetRegistryModule::AssetCreated (Texture);
+
+            // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
+            FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
+
+            // Save!!
+            UPackage::Save (TexturePackage,
+                Texture,
+                EObjectFlags::RF_Public | ::RF_Standalone,
+                *PackageFileName,
+                GError,
+                nullptr,
+                true,
+                true,
+                SAVE_Async | SAVE_NoError
+            );
+            return Texture;
         }
 
         static UTexture2D *CreateTexture (UObject *OuterPackage, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo &InPixelFormat, const FName &TextureName)

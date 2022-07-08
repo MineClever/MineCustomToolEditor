@@ -154,7 +154,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             /* Size Checker */
             const UTexture2D * const Tex2D = Cast<UTexture2D> (PTexObj);
-            int32 const MaxSize = Tex2D->PlatformData->SizeX >= Tex2D->PlatformData->SizeY ? Tex2D->PlatformData->SizeX : Tex2D->PlatformData->SizeY;
+            const int32 & SizeX = Tex2D->PlatformData->SizeX, SizeY = Tex2D->PlatformData->SizeY;
+            int32 const MaxSize = SizeX >= SizeY ? SizeX : SizeY;
 
             if (MaxSize <= 512) bSmallSize = true;
             TEnumAsByte<TextureMipGenSettings> MipGenSettings = TextureMipGenSettings::TMGS_LeaveExistingMips;
@@ -166,19 +167,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
                     break;
                 }
-                if (MaxSize >= 1024 && MaxSize< 2048)
+                if (MaxSize > 512 && MaxSize< 1024)
                 {
                     MipGenSettings = TextureMipGenSettings::TMGS_Sharpen0;
                     break;
                 }
-                if (MaxSize >= 2048 && MaxSize < 4096) {
+                if (MaxSize >= 1024 && MaxSize < 4096) {
                     MipGenSettings = TextureMipGenSettings::TMGS_FromTextureGroup;
                     break;
                 }
-                else
-                {
-                    MipGenSettings = OriginSettings;
-                }
+                MipGenSettings = OriginSettings;
                 break;
             }
             PTexObj->MipGenSettings = MipGenSettings;
@@ -195,12 +193,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 if (bForceLinear && !bNorm) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
                 }
+                if (bForceLinear && bNorm) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+                }
                 if (bForceLinear && bSRGB) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
                 }
                 if (bForceLinear && bMask) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
                 }
+
                 if (bForceLinear) {
                     break;
                 }
