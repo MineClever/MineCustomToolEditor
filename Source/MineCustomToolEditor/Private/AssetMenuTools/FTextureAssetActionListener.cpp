@@ -174,7 +174,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 if (MaxSize >= 2048 && MaxSize < 4096) {
                     MipGenSettings = TextureMipGenSettings::TMGS_FromTextureGroup;
                     break;
-                } else
+                }
+                else
                 {
                     MipGenSettings = OriginSettings;
                 }

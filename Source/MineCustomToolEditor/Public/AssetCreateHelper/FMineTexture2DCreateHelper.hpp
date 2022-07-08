@@ -89,7 +89,6 @@ namespace MineAssetCreateHelperInternal
                 {
 #ifdef SWAP_RG
                     // Our map was formatted under 4 channels; 
-
                     bool bSaved = true;
                     for (int Index = 0; Index < RawFileData.Num (); ++Index) {
                         if (Index % 2 == 0 && Index >=2) {
