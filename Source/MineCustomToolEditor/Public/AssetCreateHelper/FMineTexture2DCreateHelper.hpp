@@ -88,13 +88,13 @@ namespace MineAssetCreateHelperInternal
                 }
                 else
                 {
-                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't read format : %s"), ImageExtName);
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't read format : %s"), *ImageExtName);
                     return nullptr;
                 }
             } // End of (!bStbLib)
             else {
                 // Swap RGBA-> BGRA; 
-                for (uint32 Index = 0; Index < RawFileData.Num (); Index += 4) {
+                for (int Index = 0; Index < RawFileData.Num (); Index += 4) {
                     RawFileData.Swap (Index, Index + 2);
                 }
 
