@@ -102,7 +102,6 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool bMask = false;
             bool bForceLinear = false;
             bool bSmallSize = false;
-            bool bVirtual = false;
 #pragma endregion TextureObjectProperties
 
             PTexObj->Modify ();
@@ -152,11 +151,44 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 break;
             } //End Switch
 
+
+            /* Size Checker */
+            const UTexture2D * const Tex2D = Cast<UTexture2D> (PTexObj);
+            int32 const MaxSize = Tex2D->PlatformData->SizeX >= Tex2D->PlatformData->SizeY ? Tex2D->PlatformData->SizeX : Tex2D->PlatformData->SizeY;
+
+            if (MaxSize <= 512) bSmallSize = true;
+            TEnumAsByte<TextureMipGenSettings> MipGenSettings = TextureMipGenSettings::TMGS_LeaveExistingMips;
+            while (true)
+            {
+                TEnumAsByte<TextureMipGenSettings> const OriginSettings = PTexObj->MipGenSettings;
+                if (bSmallSize)
+                {
+                    MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+                    break;
+                }
+                if (MaxSize >= 1024 && MaxSize< 2048)
+                {
+                    MipGenSettings = TextureMipGenSettings::TMGS_Sharpen0;
+                    break;
+                }
+                if (MaxSize >= 2048 && MaxSize < 4096) {
+                    MipGenSettings = TextureMipGenSettings::TMGS_FromTextureGroup;
+                    break;
+                } else
+                {
+                    MipGenSettings = OriginSettings;
+                }
+                break;
+            }
+            PTexObj->MipGenSettings = MipGenSettings;
+
+
             /* Format setting */
             TextureCompressionSettings LTempCompressionSettings = TextureCompressionSettings::TC_Default;
             while (true) {
                 if (bSmallSize) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Displacementmap;
+                    PTexObj->MipLoadOptions = ETextureMipLoadOptions::OnlyFirstMip;
                     break;
                 }
                 if (bForceLinear && !bNorm) {
@@ -186,6 +218,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             PTexObj->CompressionSettings = LTempCompressionSettings;
 
 
+
             /* Process Virtual texture property */
             bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
             if (bVirtualTex && bConvertVirtualTex)
@@ -193,7 +226,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 ConvertTextureVirtualTo2dTex (PTexObj);
             }
 
-            // Save!!
+            /* Save Current Package */ 
             PTexObj->GetPackage ()->MarkPackageDirty ();
             UPackage::Save (PTexObj->GetPackage (),
                 PTexObj,

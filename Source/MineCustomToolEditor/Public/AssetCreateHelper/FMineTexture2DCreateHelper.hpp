@@ -50,30 +50,6 @@ namespace MineAssetCreateHelperInternal
                 TSharedPtr<unsigned char> const StbImgDataPtr =
                     MakeShareable (stbi_load (TCHAR_TO_ANSI (*LongPicturePath), &SizeX, &SizeY, &ImgChannels, LPixelFormat.BlockBytes));
                 if (StbImgDataPtr.IsValid ()) {
-                    
-                    //TArray<uint8> TempArray;
-                    //TempArray.Empty ();
-                    //TempArray.Append (StbImgDataPtr.Get (), SizeX * SizeY * LPixelFormat.BlockBytes);
-                    //for (int i=0;i<SizeY;++i)
-                    //{
-                    //    for (int j=0; j < SizeY; ++j)
-                    //    {
-                    //        int const Index = j + SizeY * i;
-                    //        for (int Count=0;Count < LPixelFormat.BlockBytes;++Count)
-                    //        {
-                    //            uint8 CurrentColor;
-                    //            if (Count >= ImgChannels)
-                    //            {
-                    //                CurrentColor = TempArray[Index + ImgChannels];
-                    //            }else
-                    //            {
-                    //                CurrentColor = TempArray[Index + Count];
-                    //            }
-                    //            RawFileData.Emplace (CurrentColor);
-                    //        }
-                    //    }
-                    //}
-
                     RawFileData.Append ((uint8*)(StbImgDataPtr.Get ()), SizeX * SizeY * LPixelFormat.BlockBytes);
                     bUseStbLib = true;
                     // stbi_image_free (StbImgDataPtr.Get ());
@@ -112,6 +88,8 @@ namespace MineAssetCreateHelperInternal
                 else 
                 {
 #ifdef SWAP_RG
+                    // Our map was formatted under 4 channels; 
+
                     bool bSaved = true;
                     for (int Index = 0; Index < RawFileData.Num (); ++Index) {
                         if (Index % 2 == 0 && Index >=2) {
@@ -210,11 +188,12 @@ namespace MineAssetCreateHelperInternal
             FMemory::Memcpy (TextureDataPtr, PixelData.GetData (), PixelSize); // copy to mip0
             Mip->BulkData.Unlock ();
             
-            // To initialize the data in a non-transient field 
+            // To initialize the data in a non-transient field (to show as * icon?)
             //NewTexture->Source.Init (InSizeX, InSizeY,
             //    1, 1,
             //    ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
             //);
+
             NewTexture->UpdateResource ();
             return NewTexture;
         }
