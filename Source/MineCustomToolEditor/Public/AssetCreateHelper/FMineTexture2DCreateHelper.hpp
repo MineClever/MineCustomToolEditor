@@ -79,7 +79,7 @@ namespace MineAssetCreateHelperInternal
             // Find Color in each pixel
             for (int32 TileHeightIndex = 0;TileHeightIndex < VT_HeightInTilesCount;++TileHeightIndex)
             {
-                int32 LTile_Udim_Index = 1001 + TileHeightIndex * 1000;
+                int32 LTile_Udim_Index = (TileHeightIndex + 1 )* 1000;
                 for (int32 TileWidthIndex = 0;TileWidthIndex < VT_WidthInTilesCount;++TileWidthIndex)
                 {
                     ++LTile_Udim_Index;
