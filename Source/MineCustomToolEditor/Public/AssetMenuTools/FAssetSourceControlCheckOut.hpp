@@ -244,13 +244,13 @@ public:
         const bool bCanCheckOut = IsSourceControlAvailable ();
         if (bCanCheckOut) {
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
-            const bool &&IsChecked = CheckOutOrAddFiles (Files, false);
+            const bool &&IsChecked = CheckOutOrAddFiles (Files, false,false);
             return IsChecked;
         }
         else return bCanCheckOut;
     }
 
-	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent)
+	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent=false, bool bAdd = true)
 	{
 		// Determine file type and ensure it is in form source control wants
 		// Even if some files were skipped, still apply to the others
@@ -285,7 +285,7 @@ public:
 
 			if (!SCState->IsCheckedOut()) { // UncheckedOut
 				if (!SCState->IsAdded ()) { // if not mark added
-					if (SCState->CanAdd ()) {
+					if (SCState->CanAdd () && bAdd) {
 						//UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark for add file : %s"), *SCFile);
 						SCFilesToAdd.Add (SCFile);
 					}
