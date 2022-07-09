@@ -269,4 +269,5 @@ namespace MineAssetCreateHelperInternal
             return NewTexture;
         }
     };
+
 }

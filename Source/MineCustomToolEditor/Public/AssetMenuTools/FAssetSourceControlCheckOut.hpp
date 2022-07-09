@@ -241,14 +241,13 @@ public:
      */
     static bool CheckOutFiles (const TArray<FString> & Files)
     {
-        const bool bCheckOut = IsSourceControlAvailable ();
-        if (bCheckOut) {
+        const bool bCanCheckOut = IsSourceControlAvailable ();
+        if (bCanCheckOut) {
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
             const bool &&IsChecked = CheckOutOrAddFiles (Files, false);
             return IsChecked;
         }
-        else return bCheckOut;
-
+        else return bCanCheckOut;
     }
 
 	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent)

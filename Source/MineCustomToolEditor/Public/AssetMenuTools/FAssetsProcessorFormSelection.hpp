@@ -46,16 +46,27 @@ public:
 		// Filter for specific type assets
 		TArray<TAsset *> Assets;
 		TArray<FString> FilesPath;
+		bool bHasSourceControl = false;
+		if (bSourceControl) {
+			if (FAssetSourceControlHelper::IsSourceControlAvailable ())
+				bHasSourceControl = true;
+			else
+			{
+				bHasSourceControl = false;
+				UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Source Control Not Valid at Current, Ignore"));
+			}
+		}
 		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
 			const FAssetData &AssetData = *AssetIt;
 			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
+				bSpecificAssetType = true | bSpecificAssetType;
 				Assets.Add (Asset);
-				if (bSourceControl)
-				    FilesPath.Add (AssetData.GetPackage ()->GetPathName());
+				if (bHasSourceControl)
+					FilesPath.Add (AssetData.GetPackage ()->GetPathName());
 			}
 		}
-		if (bSourceControl)
-		    FAssetSourceControlHelper::CheckOutFiles (FilesPath);
+		if (bHasSourceControl) FAssetSourceControlHelper::CheckOutFiles (FilesPath);
+
 		ProcessAssets (Assets);
 	}
 };
