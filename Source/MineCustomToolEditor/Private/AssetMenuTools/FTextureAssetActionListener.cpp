@@ -257,11 +257,12 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             }
             else
             {
+                FString const CurrentPackageFullPath = PTexObj->GetOutermost ()->GetName ();
                 for (auto ImageFilePath : FilesToImport)
                 {
 
                     // Make a new package name by Image path name
-                    FString ImageName, PackageDirPath, UnusedPath, LongPackageName, CurrentPackageFullPath = PTexObj->GetOutermost ()->GetName ();
+                    FString ImageName, PackageDirPath, UnusedPath, LongPackageName;
                     FPaths::Split (ImageFilePath, UnusedPath, ImageName, UnusedPath);
                     FPaths::Split (CurrentPackageFullPath, PackageDirPath, UnusedPath, UnusedPath);
                     FPackageName::TryConvertFilenameToLongPackageName (FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName), LongPackageName);

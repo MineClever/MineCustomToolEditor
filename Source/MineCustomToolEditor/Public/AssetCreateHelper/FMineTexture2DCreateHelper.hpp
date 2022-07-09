@@ -9,21 +9,103 @@
 #include "RHI.h"
 #include "EditorFramework/AssetImportData.h"
 #include "HAL/UnrealMemory.h"
+#include "PackageTools.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-// #define STBI_MALLOC, STBI_REALLOC, and STBI_FREE
-#define STBI_MALLOC(sz) FMemory::Malloc(sz,sizeof(sz))
-#define STBI_FREE(ptr) FMemory::Free(ptr)
-#define STBI_REALLOC(ptr,newsz) FMemory::Realloc(ptr,newsz,sizeof(newsz))
-#include "stb_image.h"
 
 
 namespace MineAssetCreateHelperInternal
 {
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz) FMemory::Malloc(sz,sizeof(sz))
+#define STBI_FREE(ptr) FMemory::Free(ptr)
+#define STBI_REALLOC(ptr,newsz) FMemory::Realloc(ptr,newsz,sizeof(newsz))
+#include "stb_image.h"
+
     class FMineTextureAssetCreateHelper
     {
     public:
+        static void CreateTextureFromVirtualTexture (UTexture2D* const VirtualTexObj)
+        {
+            UPackage * CurrentPackage = VirtualTexObj->GetPackage();
+            FString &&CurrentVT_PackageLongName = CurrentPackage->GetName ();
+
+            // Set Texture as nice map
+            VirtualTexObj->SRGB = false;
+            VirtualTexObj->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+            VirtualTexObj->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+            VirtualTexObj->UpdateResource ();
+
+            // Read image data from VirtualTexture
+            const FTexturePlatformData* const PlatformData = VirtualTexObj->PlatformData;
+            int32 const VT_WidthInTilesCount = PlatformData->VTData->GetWidthInTiles ();
+            int32 const VT_HeightInTilesCount = PlatformData->VTData->GetHeightInTiles();
+            int32 &&VT_TitleSize = PlatformData->VTData->TileSize;
+
+            auto VT_DataChunks = PlatformData->VTData->Chunks;
+
+            auto CreateAndSaveTexPackage =
+                [&](const FString &CurrentChunkOuterPackageName, const uint8* &TextureDataRawArray) {
+                UPackage *TexturePackage = CreatePackage (*CurrentChunkOuterPackageName);
+                TexturePackage->FullyLoad ();
+
+                FName const ShortTextureName = *FPaths::GetBaseFilename (CurrentChunkOuterPackageName);
+                UTexture2D *Texture = CreateTextureFromPixelData (TexturePackage, TextureDataRawArray, VT_TitleSize,
+                    VT_TitleSize, GPixelFormats[PF_B8G8R8A8],
+                    ShortTextureName);
+
+                // Mark package dirty
+                TexturePackage->MarkPackageDirty ();
+
+                // Register Asset
+                FAssetRegistryModule::AssetCreated (Texture);
+
+                // Get Package File Name
+                FString &&PackageFileName = FPackageName::LongPackageNameToFilename (CurrentChunkOuterPackageName);
+
+                // Save!!
+                UPackage::Save (TexturePackage,
+                    Texture,
+                    EObjectFlags::RF_Public | ::RF_Standalone,
+                    *PackageFileName,
+                    GError,
+                    nullptr,
+                    true,
+                    true,
+                    SAVE_Async | SAVE_NoError
+                );
+            };
+
+            // Find Color in each pixel
+            for (int32 TileHeightIndex = 0;TileHeightIndex < VT_HeightInTilesCount;++TileHeightIndex)
+            {
+                int32 LTile_Udim_Index = 1001 + TileHeightIndex * 1000;
+                for (int32 TileWidthIndex = 0;TileWidthIndex < VT_WidthInTilesCount;++TileWidthIndex)
+                {
+                    ++LTile_Udim_Index;
+                    int32 const VT_TitleIndex = TileWidthIndex + TileHeightIndex;
+                    int32 const ChunkIndex = PlatformData->VTData->GetChunkIndex (VT_TitleIndex);
+                    const FVirtualTextureDataChunk &CurrentChunkData = VT_DataChunks[ChunkIndex];
+
+                    // Read TextureData from current VT chunk
+                    const uint8 *TextureDataRawArray= 
+                        static_cast <const uint8 *>(CurrentChunkData.BulkData.LockReadOnly ());
+                    CurrentChunkData.BulkData.Unlock ();
+
+                    // Create New Package Name From Current Chunk
+                    FString CurrentChunkOuterPackageName = 
+                        CurrentVT_PackageLongName + TEXT ("_") + FString::FromInt (LTile_Udim_Index);
+                    CreateAndSaveTexPackage (CurrentChunkOuterPackageName, TextureDataRawArray);
+                }
+            }
+
+            // Reload Package to reset change
+            TArray<UPackage *> AssetPackages;
+            AssetPackages.AddUnique (CurrentPackage);
+            UPackageTools::ReloadPackages (AssetPackages);
+
+        }
+
         static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
         {
             // Get ImageName from LongPicturePath
@@ -105,7 +187,7 @@ namespace MineAssetCreateHelperInternal
             if (SizeX <= 0 || SizeY <= 0 ||
                 (SizeX % LPixelFormat.BlockSizeX) != 0 ||
                 (SizeX % LPixelFormat.BlockSizeY) != 0) {
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Invalid parameters specified for CreateTexture()"));
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Invalid parameters specified for CreateTextureFromPixelData()"));
                 return nullptr;
             }
 
@@ -115,10 +197,10 @@ namespace MineAssetCreateHelperInternal
 
             // Make Texture2D
             UTexture2D *Texture = nullptr;
-            Texture = CreateTexture (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
+            Texture = CreateTextureFromPixelData (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
             Texture->AssetImportData->AddFileName (LongPicturePath, 0);
 
-            // Create Asset
+            // Mark package dirty
             TexturePackage->MarkPackageDirty ();
 
             // Register Asset
@@ -141,7 +223,12 @@ namespace MineAssetCreateHelperInternal
             return Texture;
         }
 
-        static UTexture2D *CreateTexture (UObject *OuterPackage, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo &InPixelFormat, const FName &TextureName)
+        static UTexture2D *CreateTextureFromPixelData (UPackage *OuterPackage, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo &InPixelFormat, const FName &TextureName)
+        {
+            return CreateTextureFromPixelData (OuterPackage, PixelData.GetData (), InSizeX, InSizeY, InPixelFormat, TextureName);
+        }
+
+        static UTexture2D *CreateTextureFromPixelData (UPackage *OuterPackage, const uint8* PixelDataPtr, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo &InPixelFormat, const FName &TextureName)
         {
             // Shamelessly copied from UTexture2D::CreateTransient with a few modifications
 
@@ -169,13 +256,13 @@ namespace MineAssetCreateHelperInternal
             // Lock the texture so that it can be modified
             Mip->BulkData.Lock (LOCK_READ_WRITE);
             uint8 *TextureDataPtr = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
-            FMemory::Memcpy (TextureDataPtr, PixelData.GetData (), PixelSize); // copy to mip0
+            FMemory::Memcpy (TextureDataPtr, PixelDataPtr, PixelSize); // copy to mip0
             Mip->BulkData.Unlock ();
             
             // To initialize the data in a non-transient field (to show as * icon?)
             //NewTexture->Source.Init (InSizeX, InSizeY,
             //    1, 1,
-            //    ETextureSourceFormat::TSF_BGRA8, PixelData.GetData ()
+            //    ETextureSourceFormat::TSF_BGRA8, PixelDataPtr.GetData ()
             //);
 
             NewTexture->UpdateResource ();
