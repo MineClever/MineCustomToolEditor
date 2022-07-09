@@ -243,7 +243,7 @@ public:
     {
         const bool bCanCheckOut = IsSourceControlAvailable ();
         if (bCanCheckOut) {
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
+            // UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to CheckOut %d files"), Files.Num ());
             const bool &&IsChecked = CheckOutOrAddFiles (Files, false,false);
             return IsChecked;
         }
@@ -262,7 +262,7 @@ public:
 		// Ensure source control system is up and running
 		ISourceControlProvider *Provider = SourceControlHelpersInternal::VerifySourceControl (bSilent);
 
-		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("current Provider : %s\n"), *(Provider->GetName().ToString()));
+		// UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("current Provider : %s\n"), *(Provider->GetName().ToString()));
 
 		if (!Provider) {
 			// Error or can't communicate with source control
@@ -309,7 +309,10 @@ public:
 				}
 			}else
 			{
-				UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("file has been already checked out : %s"), *SCFile);
+				TArray<FStringFormatArg> FormatArray;
+				FormatArray.Add (FStringFormatArg (SCFile));
+				FText ErrorLog = FText::FromString(FString::Format(TEXT ("file has been already checked out : {0}"), FormatArray));
+				SourceControlHelpersInternal::LogError (ErrorLog,true);
 			}
 		}
 

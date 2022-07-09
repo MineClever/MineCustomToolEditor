@@ -300,14 +300,14 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 namespace  FTextureAssetActionListener_Internal
 {
     using namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal;
-    class MineAssetCtxMenuCommands final : public TCommands<MineAssetCtxMenuCommands>
+    class MineAssetCtxMenuCommandsInfo final : public TCommands<MineAssetCtxMenuCommandsInfo>
     {
     public:
 
         /* INIT */
         static FName MenuCtxName;
-        MineAssetCtxMenuCommands ()
-            : TCommands<MineAssetCtxMenuCommands> (
+        MineAssetCtxMenuCommandsInfo ()
+            : TCommands<MineAssetCtxMenuCommandsInfo> (
                 MenuCtxName, // Context name for fast lookup
                 FText::FromString (MenuCtxName.ToString()), // Context name for displaying
                 NAME_None,   // No parent context
@@ -320,7 +320,7 @@ namespace  FTextureAssetActionListener_Internal
         virtual void RegisterCommands () override
         {
 
-            UI_COMMAND (MenuCommand1,
+            UI_COMMAND (MenuCommandInfo_0,
                 "Auto set Tex Format",
                 "Auto set format for selected texture assets.",
                 EUserInterfaceActionType::Button, FInputGesture ()
@@ -330,10 +330,10 @@ namespace  FTextureAssetActionListener_Internal
 
     public:
         /* Command Action Objects */
-        TSharedPtr<FUICommandInfo> MenuCommand1;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
 
     };
-    FName MineAssetCtxMenuCommands::MenuCtxName = TEXT ("MineTexAssetCtxMenu");
+    FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineTexAssetCtxMenu");
 
     /* Extension to menu */
     class FMineContentBrowserExtensions_SelectedAssets
@@ -360,7 +360,7 @@ namespace  FTextureAssetActionListener_Internal
 
             MappingCommand (CommandList, SelectedAssets);
 
-            if (CheckSelectedTypeTarget<UTexture>(SelectedAssets,true)) {
+            if (AssetsProcessorCastHelper::CheckSelectedTypeTarget<UTexture>(SelectedAssets,true)) {
                 // Add the Static actions sub-menu extender
                 Extender->AddMenuExtension (
                     "GetAssetActions",
@@ -399,58 +399,21 @@ namespace  FTextureAssetActionListener_Internal
         )
         {
             // Add to Menu
-            static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
-            MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand1);
+            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
         }
-
-
-        /**
-         * @brief :                     Check if target type in current selections
-         * @tparam :                    Should derived from UObject
-         * @param   SelectedAssets :    Current Selections
-         * @param   bCanCast :          Test if Asset Can cast to target Type
-         * @return :                    return true if target type in current selections
-         */
-        template<typename T>
-        static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets, bool bCanCast = false)
-        {
-            bool bCurrentType = false;
-            bool bCanCastType = false;
-            for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
-                const FAssetData &Asset = *AssetIt;
-                if (bCanCast) bCanCastType = Cast<T> (Asset.GetAsset ()) != nullptr;
-                bCurrentType = bCurrentType || (Asset.AssetClass == T::StaticClass ()->GetFName ()) || bCanCastType;
-            }
-            return bCurrentType;
-        }
-
-        //static FAssetsProcessorFormSelection_Base * &
-        template<typename P>
-        static TSharedPtr<FAssetsProcessorFormSelection_Base>
-            CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
-        {
-            static_assert (
-                std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
-                "Must be derived from FAssetsProcessorFormSelection_Base"
-                );
-
-            TSharedPtr<P> Processor = MakeShareable (new P);//On Heap
-            Processor->SelectedAssets = SelectedAssets;
-            return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
-        }
-
 
         static void MappingCommand (
             const TSharedPtr<FUICommandList> &CommandList,
             const TArray<FAssetData> &SelectedAssets
         )
         {
-            static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
+            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
             CommandList->MapAction (
-                ToolCommands.MenuCommand1,
+                ToolCommandsInfo.MenuCommandInfo_0,
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
-                    CreateProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat> (SelectedAssets)
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
             );
@@ -467,7 +430,7 @@ void FTextureAssetActionListener::InstallHooks ()
 {
     UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
     // register commands
-    FTextureAssetActionListener_Internal::MineAssetCtxMenuCommands::Register ();
+    FTextureAssetActionListener_Internal::MineAssetCtxMenuCommandsInfo::Register ();
 
     // Declare Delegate 
     ContentBrowserExtenderDelegate =

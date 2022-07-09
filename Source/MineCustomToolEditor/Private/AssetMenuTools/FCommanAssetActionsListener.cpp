@@ -7,13 +7,13 @@
 #define LOCTEXT_NAMESPACE "FCommanAssetActionsListener"
 
 /* Commands */
-class MineAssetCtxMenuCommands : public TCommands<MineAssetCtxMenuCommands>
+class MineAssetCtxMenuCommandsInfo : public TCommands<MineAssetCtxMenuCommandsInfo>
 {
 public:
 
     /* INIT */
-    MineAssetCtxMenuCommands ()
-        : TCommands<MineAssetCtxMenuCommands> (
+    MineAssetCtxMenuCommandsInfo ()
+        : TCommands<MineAssetCtxMenuCommandsInfo> (
             TEXT ("MineCommonAssetCtxMenu"), // Context name for fast lookup
             FText::FromString ("MineCommonAssetCtxMenu"), // Context name for displaying
             NAME_None,   // No parent context
@@ -26,12 +26,12 @@ public:
     virtual void RegisterCommands () override
     {
 
-        UI_COMMAND (MenuCommand1,
+        UI_COMMAND (MenuCommandInfo_0,
             "Reload selected assets",
             "Reload selected assets form top package.",
             EUserInterfaceActionType::Button, FInputGesture ()
         );
-        UI_COMMAND (MenuCommand2,
+        UI_COMMAND (MenuCommandInfo_1,
             "Copy Asset Content Path",
             "Copy Asset Content Path from selected.",
             EUserInterfaceActionType::Button, FInputGesture ()
@@ -40,8 +40,8 @@ public:
 
 public:
     /* Command Action Objects */
-    TSharedPtr<FUICommandInfo> MenuCommand1;
-    TSharedPtr<FUICommandInfo> MenuCommand2;
+    TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
+    TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
 
 };
 
@@ -151,26 +151,9 @@ public:
     )
     {
         // Add to Menu
-        static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
-        MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand1);
-        MenuBuilder.AddMenuEntry (ToolCommands.MenuCommand2);
-    }
-
-
-
-    //static FAssetsProcessorFormSelection_Base * &
-    template<typename P>
-    static TSharedPtr<FAssetsProcessorFormSelection_Base>
-    CreateProcessorPtr (const TArray<FAssetData> &SelectedAssets)
-    {
-        static_assert (
-            std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
-            "Must be derived from FAssetsProcessorFormSelection_Base"
-        );
-
-        TSharedPtr<P> Processor = MakeShareable (new P);//On Heap
-        Processor->SelectedAssets = SelectedAssets;
-        return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
+        static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+        MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
+        MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
     }
 
 
@@ -179,20 +162,20 @@ public:
         const TArray<FAssetData> &SelectedAssets
     )
     {
-        static const MineAssetCtxMenuCommands &ToolCommands = MineAssetCtxMenuCommands::Get ();
+        static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
         CommandList->MapAction (
-            ToolCommands.MenuCommand1,
+            ToolCommandsInfo.MenuCommandInfo_0,
             FExecuteAction::CreateStatic(
                 &ExecuteProcessor,
-                CreateProcessorPtr<FCommonAssetReloadPackagesProcessor> (SelectedAssets)
+                AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetReloadPackagesProcessor> (SelectedAssets)
             ),
             FCanExecuteAction()
         );
         CommandList->MapAction (
-            ToolCommands.MenuCommand2,
+            ToolCommandsInfo.MenuCommandInfo_1,
             FExecuteAction::CreateStatic (
                 &ExecuteProcessor,
-                CreateProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
+                AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
             ),
             FCanExecuteAction ()
         );
@@ -207,7 +190,7 @@ void FCommonAssetActionsListener::InstallHooks()
 {
     UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
     // register commands
-    MineAssetCtxMenuCommands::Register ();
+    MineAssetCtxMenuCommandsInfo::Register ();
 
     // Declare Delegate 
     ContentBrowserExtenderDelegate =

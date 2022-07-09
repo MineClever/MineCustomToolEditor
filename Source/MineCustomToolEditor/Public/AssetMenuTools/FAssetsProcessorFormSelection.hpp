@@ -14,6 +14,7 @@ public:
 public:
 	virtual void Execute () {}
 	virtual ~FAssetsProcessorFormSelection_Base () {}
+
 };
 
 
@@ -71,9 +72,49 @@ public:
 	}
 };
 
+
 // template specialization
 template <class TAsset>
 void TAssetsProcessorFormSelection_Builder<TAsset>::ProcessAssets (TArray<TAsset *> &Assets)
 {
 	UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Not Found Specialization Of Class % "), *(Assets.Last ()->GetClass ()->GetName ()));
 }
+
+
+namespace AssetsProcessorCastHelper
+{
+	template<typename P>
+	static TSharedPtr<FAssetsProcessorFormSelection_Base>
+    CreateBaseProcessorPtr (const TArray<FAssetData> &SelectedAssets)
+	{
+		static_assert (
+			std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
+			"Must be derived from FAssetsProcessorFormSelection_Base"
+			);
+
+		TSharedPtr<P> Processor = MakeShareable (new P);//On Heap
+		Processor->SelectedAssets = SelectedAssets;
+		return StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (Processor);
+	}
+
+	/**
+	 * @brief :                     Check if target type in current selections
+	 * @tparam :                    Should derived from UObject
+	 * @param   SelectedAssets :    Current Selections
+	 * @param   bCanCast :          Test if Asset Can cast to target Type
+	 * @return :                    return true if target type in current selections
+	 */
+	template<typename T>
+	static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets, bool bCanCast = false)
+	{
+		bool bCurrentType = false;
+		bool bCanCastType = false;
+		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
+			const FAssetData &Asset = *AssetIt;
+			if (bCanCast) bCanCastType = Cast<T> (Asset.GetAsset ()) != nullptr;
+			bCurrentType = bCurrentType || (Asset.AssetClass == T::StaticClass ()->GetFName ()) || bCanCastType;
+		}
+		return bCurrentType;
+	}
+}
+
