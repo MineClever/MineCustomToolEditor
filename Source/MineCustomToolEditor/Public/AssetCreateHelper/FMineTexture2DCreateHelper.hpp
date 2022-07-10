@@ -197,10 +197,11 @@ namespace MineAssetCreateHelperInternal
 
             // Make Texture2D
             UTexture2D *Texture = nullptr;
-            TWeakObjectPtr<UTexture2D> const WeakTextureObj = Texture;
+            
             Texture = CreateTextureFromPixelData (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
+            TWeakObjectPtr<UTexture2D> const WeakTextureObj = Texture;
 
-            if (WeakTextureObj.Get ())
+            if (WeakTextureObj.IsValid ())
             {
                 Texture->AssetImportData->AddFileName (LongPicturePath, 0);
                 // Mark package dirty
