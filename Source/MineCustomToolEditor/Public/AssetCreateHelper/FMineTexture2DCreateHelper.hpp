@@ -268,10 +268,10 @@ namespace MineAssetCreateHelperInternal
             Mip->BulkData.Unlock ();
             
             // To initialize the data in a non-transient field (to show as * icon?)
-            //NewTexture->Source.Init (InSizeX, InSizeY,
-            //    1, 1,
-            //    ETextureSourceFormat::TSF_BGRA8, PixelDataPtr.GetData ()
-            //);
+            NewTexture->Source.Init (InSizeX, InSizeY,
+                1, 1,
+                ETextureSourceFormat::TSF_BGRA8, PixelDataPtr ()
+            );
 
             NewTexture->UpdateResource ();
             return NewTexture;

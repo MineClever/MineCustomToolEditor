@@ -178,9 +178,20 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             /* Size Checker */
             const UTexture2D * const Tex2D = Cast<UTexture2D> (PTexObj);
-            const int32 & SizeX = Tex2D->PlatformData->SizeX, SizeY = Tex2D->PlatformData->SizeY;
-            int32 const MaxSize = SizeX >= SizeY ? SizeX : SizeY;
+            uint32 SizeX, SizeY;
+            if (Tex2D!=nullptr)
+            {
+                SizeX = Tex2D->PlatformData->SizeX;
+                SizeY = Tex2D->PlatformData->SizeY;
+            }
+            else
+            {
+                const FTextureResource* &&TexRes = PTexObj->GetResource();
+                SizeX = TexRes->GetSizeX ();
+                SizeY = TexRes->GetSizeY ();
+            }
 
+            uint32 const MaxSize = SizeX >= SizeY ? SizeX : SizeY;
             if (MaxSize <= 512) bSmallSize = true;
             TEnumAsByte<TextureMipGenSettings> MipGenSettings = TextureMipGenSettings::TMGS_LeaveExistingMips;
             while (true)
