@@ -199,35 +199,29 @@ namespace MineAssetCreateHelperInternal
             UTexture2D *Texture = nullptr;
             
             Texture = CreateTextureFromPixelData (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
-            TWeakObjectPtr<UTexture2D> const WeakTextureObj = Texture;
 
-            if (WeakTextureObj.IsValid ())
-            {
-                Texture->AssetImportData->AddFileName (LongPicturePath, 0);
-                // Mark package dirty
-                TexturePackage->MarkPackageDirty ();
+            Texture->AssetImportData->AddFileName (LongPicturePath, 0);
+            // Mark package dirty
+            TexturePackage->MarkPackageDirty ();
 
-                // Register Asset
-                FAssetRegistryModule::AssetCreated (Texture);
+            // Register Asset
+            FAssetRegistryModule::AssetCreated (Texture);
 
-                // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
-                FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
+            // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
+            FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
 
-                // Save!!
-                UPackage::Save (TexturePackage,
-                    Texture,
-                    EObjectFlags::RF_Public | ::RF_Standalone,
-                    *PackageFileName,
-                    GError,
-                    nullptr,
-                    true,
-                    true,
-                    SAVE_Async | SAVE_NoError
-                );
-                return Texture;
-            }
-            else
-                return nullptr;
+            // Save!!
+            UPackage::Save (TexturePackage,
+                Texture,
+                EObjectFlags::RF_Public | ::RF_Standalone,
+                *PackageFileName,
+                GError,
+                nullptr,
+                true,
+                true,
+                SAVE_Async | SAVE_NoError
+            );
+            return Texture;
 
         }
 
@@ -266,13 +260,13 @@ namespace MineAssetCreateHelperInternal
             uint8 *TextureDataPtr = static_cast<uint8 *>(Mip->BulkData.Realloc (PixelSize));
             FMemory::Memcpy (TextureDataPtr, PixelDataPtr, PixelSize); // copy to mip0
             Mip->BulkData.Unlock ();
-            
+            NewTexture->UpdateResource ();
+
             // To initialize the data in a non-transient field (to show as * icon?)
             NewTexture->Source.Init (InSizeX, InSizeY,
                 1, 1,
-                ETextureSourceFormat::TSF_BGRA8, PixelDataPtr ()
+                ETextureSourceFormat::TSF_BGRA8, PixelDataPtr
             );
-
             NewTexture->UpdateResource ();
             return NewTexture;
         }
