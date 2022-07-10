@@ -1,6 +1,7 @@
 ﻿#include <AssetMenuTools/FTextureAssetActionListener.h>
 
 #include "AssetToolsModule.h"
+#include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
 
@@ -9,6 +10,7 @@
 /* Implementation of FUTextureAssetProcessor_AutoSetTexFormat */
 namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
+    using namespace MineCreateFormatString;
 
     inline void SaveUObjectPackage (UObject* InObject)
     {
@@ -193,6 +195,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             uint32 const MaxSize = SizeX >= SizeY ? SizeX : SizeY;
             if (MaxSize <= 512) bSmallSize = true;
+
+
             TEnumAsByte<TextureMipGenSettings> MipGenSettings = TextureMipGenSettings::TMGS_LeaveExistingMips;
             while (true)
             {
@@ -253,6 +257,13 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             /* Process Virtual texture property */
             bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
+
+            const FString &&TempString =
+                FMineFormattedFStringHelper::FormattedFString (
+                    TEXT ("SizeX:{0}, SizeY:{1}, SRGB:{2}, ForceLinear:{3}, VirtualTexture:{4}"),
+                    SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex);
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempString)
+
             if (bVirtualTex && bConvertVirtualTex)
             {
                 ConvertVirtualTexToTex2d (PTexObj);

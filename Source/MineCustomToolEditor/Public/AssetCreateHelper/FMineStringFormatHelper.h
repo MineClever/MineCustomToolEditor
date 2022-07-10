@@ -13,7 +13,7 @@ namespace MineCreateFormatString
          * @param ... : FString
          * @return : FString
          */
-        FORCEINLINE static FString FormattedFStringWithCount (const TCHAR *BaseString, uint8 ArgsCount, ...)
+        FORCEINLINE static FString FormattedFStringTypeWithCount (const TCHAR *BaseString, uint8 ArgsCount, ...)
         {
             TArray<FStringFormatArg> FormatArray;
 
