@@ -9,21 +9,35 @@
 /* Implementation of FUTextureAssetProcessor_AutoSetTexFormat */
 namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
+
+    inline void SaveUObjectPackage (UObject* InObject)
+    {
+        InObject->GetPackage ()->MarkPackageDirty ();
+        UPackage::Save (InObject->GetPackage (),
+            InObject,
+            EObjectFlags::RF_Public | ::RF_Standalone,
+            *InObject->GetPackage ()->GetName (),
+            GError,
+            nullptr,
+            true,
+            true,
+            SAVE_NoError | SAVE_Async
+        );
+    }
+
     class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
     {
     protected:
-        static bool bTagRuleExist;
-        static TSet<FString> TagRule_SRGB;
-        static TSet<FString> TagRule_Normal;
-        static TSet<FString> TagRule_Mask;
-        static TSet<FString> TagRule_ForceLinear;
+        bool bTagRuleExist;
+        TSet<FString> TagRule_SRGB;
+        TSet<FString> TagRule_Normal;
+        TSet<FString> TagRule_Mask;
+        TSet<FString> TagRule_ForceLinear;
 
     public:
-        FUTextureAssetProcessor_AutoSetTexFormat ()
+        FUTextureAssetProcessor_AutoSetTexFormat ():bTagRuleExist(false)
         {
-            if (!bTagRuleExist) {
-                UpdateTagRules ();
-            }
+            this->FUTextureAssetProcessor_AutoSetTexFormat::UpdateTagRules ();
         }
 
         virtual void ProcessAssets (TArray<UTexture *> &Assets) override
@@ -36,8 +50,15 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
         }
 
-        static void UpdateTagRules ()
+        virtual void UpdateTagRules ()
         {
+            if (bTagRuleExist)
+            {
+                TagRule_SRGB.Empty ();
+                TagRule_Normal.Empty ();
+                TagRule_Mask.Empty ();
+                TagRule_ForceLinear.Empty ();
+            }
             TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
             TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
             TagRule_Mask.Append (CreateRuleFStringArray (TEXT ("mask")));
@@ -94,7 +115,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             ConvertProcessor (PTexObj,true);
         }
 
-        static void ConvertProcessor (UTexture *PTexObj,const bool bConvertVirtualTex=false)
+    protected:
+        virtual void ConvertProcessor (UTexture *PTexObj,const bool bConvertVirtualTex=false) const
         {
             #pragma region TextureObjectProperties
             bool bSRGB = false;
@@ -222,24 +244,14 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
             if (bVirtualTex && bConvertVirtualTex)
             {
-                ConvertTextureVirtualTo2dTex (PTexObj);
+                ConvertVirtualTexToTex2d (PTexObj);
             }
 
-            /* Save Current Package */ 
-            PTexObj->GetPackage ()->MarkPackageDirty ();
-            UPackage::Save (PTexObj->GetPackage (),
-                PTexObj,
-                EObjectFlags::RF_Public | ::RF_Standalone,
-                *PTexObj->GetPackage ()->GetName (),
-                GError,
-                nullptr,
-                true,
-                true,
-                SAVE_NoError | SAVE_Async
-            );
+            /* Save Current Package */
+            SaveUObjectPackage (PTexObj);
         }
 
-        static void ConvertTextureVirtualTo2dTex (UTexture* const PTexObj)
+        virtual void ConvertVirtualTexToTex2d (UTexture* const PTexObj) const
         {
             using namespace MineAssetCreateHelperInternal;
             //const FAssetToolsModule &AssetToolsModule =
@@ -277,21 +289,12 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 }
             }
 
-        } // End of ConvertTextureVirtualTo2dTex
-
+        } // End of ConvertVirtualTexToTex2d
 
     };
 
 }
 
-namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
-{
-    bool FUTextureAssetProcessor_AutoSetTexFormat::bTagRuleExist = false;
-    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_SRGB = TSet<FString> ();
-    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_Normal = TSet<FString> ();
-    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_Mask = TSet<FString> ();
-    TSet<FString> FUTextureAssetProcessor_AutoSetTexFormat::TagRule_ForceLinear = TSet<FString> ();
-}
 
 
 
