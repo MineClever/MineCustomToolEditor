@@ -197,30 +197,37 @@ namespace MineAssetCreateHelperInternal
 
             // Make Texture2D
             UTexture2D *Texture = nullptr;
+            TWeakObjectPtr<UTexture2D> const WeakTextureObj = Texture;
             Texture = CreateTextureFromPixelData (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
-            Texture->AssetImportData->AddFileName (LongPicturePath, 0);
 
-            // Mark package dirty
-            TexturePackage->MarkPackageDirty ();
+            if (WeakTextureObj.Get ())
+            {
+                Texture->AssetImportData->AddFileName (LongPicturePath, 0);
+                // Mark package dirty
+                TexturePackage->MarkPackageDirty ();
 
-            // Register Asset
-            FAssetRegistryModule::AssetCreated (Texture);
+                // Register Asset
+                FAssetRegistryModule::AssetCreated (Texture);
 
-            // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
-            FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
+                // Get Package File Name : path/TexAsset --> path/TexAsset.uasset
+                FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
 
-            // Save!!
-            UPackage::Save (TexturePackage,
-                Texture,
-                EObjectFlags::RF_Public | ::RF_Standalone,
-                *PackageFileName,
-                GError,
-                nullptr,
-                true,
-                true,
-                SAVE_Async | SAVE_NoError
-            );
-            return Texture;
+                // Save!!
+                UPackage::Save (TexturePackage,
+                    Texture,
+                    EObjectFlags::RF_Public | ::RF_Standalone,
+                    *PackageFileName,
+                    GError,
+                    nullptr,
+                    true,
+                    true,
+                    SAVE_Async | SAVE_NoError
+                );
+                return Texture;
+            }
+            else
+                return nullptr;
+
         }
 
         static UTexture2D *CreateTextureFromPixelData (UPackage *OuterPackage, const TArray<uint8> &PixelData, int32 &InSizeX, int32 &InSizeY, const FPixelFormatInfo &InPixelFormat, const FName &TextureName)
