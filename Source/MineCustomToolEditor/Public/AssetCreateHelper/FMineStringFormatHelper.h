@@ -1,34 +1,10 @@
 ﻿#pragma once
-#include <stdarg.h>
 #include "CoreMinimal.h"
 
 namespace MineFormatStringInternal
 {
     namespace FormattedFStringHelper
     {
-        /**
-         * @brief :use as FormattedFString(TEXT("Example String {0} {1}"), 2, FString_0, FString_1)
-         * @param BaseString : TCHAR *
-         * @param ArgsCount : uint8
-         * @param ... : FString
-         * @return : FString
-         */
-        FORCEINLINE static FString FormattedFStringTypeWithCount (const TCHAR *BaseString, uint8 ArgsCount, ...)
-        {
-            TArray<FStringFormatArg> FormatArray;
-
-            va_list Args;
-            va_start (Args, ArgsCount);
-
-            for (int i = 0; i < ArgsCount; ++i) {
-                FString const CurString = va_arg (Args, FString);
-                FormatArray.Add (FStringFormatArg (CurString));
-            }
-            va_end (Args);
-
-            return FString::Format (BaseString, FormatArray);
-        }
-
         template <typename T>
         FORCEINLINE static void AddToFormatArgArray (TArray<FStringFormatArg> &FormatArray, const T &CurArg)
         {
@@ -56,7 +32,6 @@ namespace MineFormatStringInternal
             AddToFormatArgArray (FormatArray, ArgsString...);
             return FString::Format (BaseString, FormatArray);
         }
-
 
     };
 
