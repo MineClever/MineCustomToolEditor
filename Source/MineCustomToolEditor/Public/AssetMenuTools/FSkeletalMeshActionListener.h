@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "MineMouduleDefine.h"
 #include "CoreMinimal.h"
-#include "ContentBrowserModule.h"
 #include "ContentBrowserDelegates.h"
-#include "GenericPlatform/GenericPlatformMisc.h"
+#include "ContentBrowserModule.h"
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 
-class FTextureAssetActionListener : public IMineCustomToolModuleListenerInterface
+
+class FSkeletalMeshMenuActionsListener : public IMineCustomToolModuleListenerInterface
 {
 public:
 	virtual void OnStartupModule () override
@@ -19,8 +19,7 @@ public:
 	};
 	void InstallHooks ();
 	void RemoveHooks ();
-	virtual ~FTextureAssetActionListener () {};
-
+	virtual ~FSkeletalMeshMenuActionsListener () override {};
 	static TArray<FContentBrowserMenuExtender_SelectedAssets> &GetExtenderDelegates ()
 	{
 		/////////////////////////////

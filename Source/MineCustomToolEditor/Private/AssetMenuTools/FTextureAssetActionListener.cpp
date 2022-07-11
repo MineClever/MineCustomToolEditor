@@ -10,7 +10,7 @@
 /* Implementation of FUTextureAssetProcessor_AutoSetTexFormat */
 namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
-    using namespace MineCreateFormatString;
+    using namespace MineFormatStringInternal;
 
     inline void SaveUObjectPackage (UObject* InObject)
     {
@@ -274,7 +274,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool const bVirtualTex = PTexObj->IsCurrentlyVirtualTextured ();
 
             const FString &&TempString =
-                FMineFormattedFStringHelper::FormattedFString (
+                FormattedFStringHelper::FormattedFString (
                     TEXT ("SizeX:{0}, SizeY:{1}, SRGB:{2}, ForceLinear:{3}, VirtualTexture:{4}"),
                     SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex);
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempString)
@@ -468,16 +468,15 @@ namespace  FTextureAssetActionListener_Internal
 
 void FTextureAssetActionListener::InstallHooks ()
 {
+    using namespace FTextureAssetActionListener_Internal;
     UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
     // register commands
-    FTextureAssetActionListener_Internal::MineAssetCtxMenuCommandsInfo::Register ();
+    MineAssetCtxMenuCommandsInfo::Register ();
 
     // Declare Delegate 
     ContentBrowserExtenderDelegate =
         FContentBrowserMenuExtender_SelectedAssets::CreateStatic (
-            &FTextureAssetActionListener_Internal::
-            FMineContentBrowserExtensions_SelectedAssets::
-            OnExtendContentBrowserAssetSelectionMenu
+            &FMineContentBrowserExtensions_SelectedAssets::OnExtendContentBrowserAssetSelectionMenu
         );
 
     // Get all content module delegates
@@ -486,9 +485,7 @@ void FTextureAssetActionListener::InstallHooks ()
 
     // Add The delegate of mine
     CBMenuExtenderDelegates.Add (ContentBrowserExtenderDelegate);
-    ContentBrowserExtenderDelegateHandle =
-        CBMenuExtenderDelegates.Last ().GetHandle ();
-
+    ContentBrowserExtenderDelegateHandle = CBMenuExtenderDelegates.Last ().GetHandle ();
 }
 
 void FTextureAssetActionListener::RemoveHooks ()
@@ -503,16 +500,5 @@ void FTextureAssetActionListener::RemoveHooks ()
     );
 }
 
-TArray<FContentBrowserMenuExtender_SelectedAssets> &
-FTextureAssetActionListener::GetExtenderDelegates ()
-{
-    /////////////////////////////
-    ///Get ContentBrowser Module
-    /////////////////////////////
-    FContentBrowserModule &ContentBrowserModule =
-        FModuleManager::LoadModuleChecked<FContentBrowserModule> (TEXT ("ContentBrowser"));
-
-    return ContentBrowserModule.GetAllAssetViewContextMenuExtenders ();
-}
 
 #undef LOCTEXT_NAMESPACE

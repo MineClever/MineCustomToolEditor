@@ -23,7 +23,7 @@ public:
 	};
     void InstallHooks ();
     void RemoveHooks ();
-    virtual ~FStaticMeshMenuActionsListener () {};
+    virtual ~FStaticMeshMenuActionsListener () override {};
 	static TArray<FContentBrowserMenuExtender_SelectedAssets> &GetExtenderDelegates ();
 public:
     FContentBrowserMenuExtender_SelectedAssets ContentBrowserExtenderDelegate;

@@ -60,7 +60,7 @@ class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection
             UPackage* PackageName = AssetData.GetPackage();
             AssetPackages.AddUnique (PackageName);
         }
-        FText &&TempFText = FText::FromString (TEXT (""));
+
         UPackageTools::ReloadPackages (AssetPackages);
     }
 };

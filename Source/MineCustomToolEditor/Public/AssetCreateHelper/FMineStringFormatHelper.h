@@ -2,9 +2,9 @@
 #include <stdarg.h>
 #include "CoreMinimal.h"
 
-namespace MineCreateFormatString
+namespace MineFormatStringInternal
 {
-    struct FMineFormattedFStringHelper
+    namespace FormattedFStringHelper
     {
         /**
          * @brief :use as FormattedFString(TEXT("Example String {0} {1}"), 2, FString_0, FString_1)
@@ -57,6 +57,28 @@ namespace MineCreateFormatString
             return FString::Format (BaseString, FormatArray);
         }
 
+
     };
 
+    struct FNsLocTextDescriptions
+    {
+        TCHAR *Key;
+        TCHAR *KeyDescription;
+        TCHAR *LocTextNameSpace;
+    };
+
+    /**
+     * @brief : Replace NSLOCTEXT Macro
+     * @param Descriptions : Struct to Format
+     * @return :FText
+     */
+    FORCEINLINE static FText NsLocText (const FNsLocTextDescriptions &Descriptions)
+    {
+        return
+            FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText (
+                Descriptions.KeyDescription,
+                Descriptions.LocTextNameSpace,
+                Descriptions.Key
+            );
+    }
 }
