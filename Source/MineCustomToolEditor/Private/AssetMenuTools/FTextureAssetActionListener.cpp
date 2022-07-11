@@ -54,13 +54,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
         virtual void UpdateTagRules ()
         {
-            if (bTagRuleExist)
-            {
-                TagRule_SRGB.Empty ();
-                TagRule_Normal.Empty ();
-                TagRule_Mask.Empty ();
-                TagRule_ForceLinear.Empty ();
-            }
+            TagRule_SRGB.Empty ();
+            TagRule_Normal.Empty ();
+            TagRule_Mask.Empty ();
+            TagRule_ForceLinear.Empty ();
+
             TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
             TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
             TagRule_Mask.Append (CreateRuleFStringArray (TEXT ("mask")));
@@ -96,11 +94,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     break;
                 }
                 if (RuleName == TEXT ("mask")) {
-                    ArrayCreateFunc (TEXT ("op,o,mask,opacity,alpha,silk,grey"));
+                    ArrayCreateFunc (TEXT ("op,o,mask,opacity,alpha,silk,arm"));
                     break;
                 }
                 if (RuleName == TEXT ("forcelinear")) {
-                    ArrayCreateFunc (TEXT ("linear,arm"));
+                    ArrayCreateFunc (TEXT ("linear,arm,amibient,metalness,roughness,opacity,op"));
                     break;
                 }
                 if (RuleName == TEXT ("floating")) {
@@ -139,7 +137,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             // "T_Tex.Name.1001"-->"T_Tex_Name_1001"
             LTexName = LTexName.Replace (TEXT ("."), TEXT ("_"), ESearchCase::IgnoreCase);
             LTexName.ParseIntoArray (LTagsArray, TEXT ("_"), true);
+            UE_LOG(LogMineCustomToolEditor,Log,TEXT("Found Name tags : %s"),*LTexName)
             LTagsSet.Append (LTagsArray);
+
+            // Have to make rules to match!
+            assert (bTagRuleExist);
 
             /* Test SRGB map*/
             const TSet<FString> &&LFoundTag_SRGB = TagRule_SRGB.Intersect (LTagsSet);
@@ -197,7 +199,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             if (MaxSize <= 512) bSmallSize = true;
 
 
-            TEnumAsByte<TextureMipGenSettings> MipGenSettings = TextureMipGenSettings::TMGS_LeaveExistingMips;
+            TEnumAsByte<TextureMipGenSettings> MipGenSettings;
             while (true)
             {
                 TEnumAsByte<TextureMipGenSettings> const OriginSettings = PTexObj->MipGenSettings;
@@ -223,9 +225,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             /* Format setting */
             TextureCompressionSettings LTempCompressionSettings = TextureCompressionSettings::TC_Default;
+            ETextureLossyCompressionAmount LTempLossyCompression = PTexObj->LossyCompressionAmount;
             while (true) {
                 if (bSmallSize) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+                    LTempLossyCompression = ETextureLossyCompressionAmount::TLCA_None;
                     PTexObj->MipLoadOptions = ETextureMipLoadOptions::OnlyFirstMip;
                     break;
                 }
@@ -233,15 +237,25 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     LTempCompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
                 }
                 if (bForceLinear && bNorm) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+                    LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
+                    LTempLossyCompression = ETextureLossyCompressionAmount::TLCA_None;
                 }
                 if (bForceLinear && bSRGB) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
                 }
                 if (bForceLinear && bMask) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Alpha;
                 }
                 if (bForceLinear) {
+                    break;
+                }
+                if (bMask && !bSRGB)
+                {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Masks;
+                    break;
+                }
+                if (bMask && bSRGB) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
                     break;
                 }
                 if (bNorm) {
@@ -253,6 +267,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 break;
             }
             PTexObj->CompressionSettings = LTempCompressionSettings;
+            PTexObj->LossyCompressionAmount = LTempLossyCompression;
 
 
             /* Process Virtual texture property */

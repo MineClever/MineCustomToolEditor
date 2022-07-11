@@ -50,6 +50,7 @@ public:
 		// Unreal AssetSubSystem
 		UAssetEditorSubsystem *const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
 
+		// TODO: Read from Config
 		float const NewDFResolutionScale = 24;
 
 		for (auto const Asset : Assets) {
