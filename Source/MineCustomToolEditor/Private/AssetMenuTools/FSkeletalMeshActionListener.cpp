@@ -65,8 +65,8 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
         {
 
             UI_COMMAND (MenuCommandInfo_0,
-                "Auto set Tex Format",
-                "Auto set format for selected texture assets.",
+                "Auto set SkeletalMesh",
+                "Auto set configs for selected SkeletalMesh assets.",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
 
