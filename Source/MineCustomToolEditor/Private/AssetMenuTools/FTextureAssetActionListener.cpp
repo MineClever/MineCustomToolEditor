@@ -20,6 +20,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         TSet<FString> TagRule_SRGB;
         TSet<FString> TagRule_Normal;
         TSet<FString> TagRule_Mask;
+        TSet<FString> TagRule_Grey;
         TSet<FString> TagRule_ForceLinear;
 
     public:
@@ -42,11 +43,13 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             TagRule_SRGB.Empty ();
             TagRule_Normal.Empty ();
             TagRule_Mask.Empty ();
+            TagRule_Grey.Empty ();
             TagRule_ForceLinear.Empty ();
 
             TagRule_SRGB.Append (CreateRuleFStringArray (TEXT ("srgb")));
             TagRule_Normal.Append (CreateRuleFStringArray (TEXT ("normal")));
             TagRule_Mask.Append (CreateRuleFStringArray (TEXT ("mask")));
+            TagRule_Grey.Append (CreateRuleFStringArray (TEXT ("grey")));
             TagRule_ForceLinear.Append (CreateRuleFStringArray (TEXT ("forcelinear")));
             bTagRuleExist = true;
         }
@@ -146,7 +149,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             if (LFoundTag_Mask.Num () > 0) bMask = true;
 
             /* Test Grey map*/
-            const TSet<FString> &&LFoundTag_Grey = TagRule_Mask.Intersect (LTagsSet);
+            const TSet<FString> &&LFoundTag_Grey = TagRule_Grey.Intersect (LTagsSet);
             if (LFoundTag_Grey.Num () > 0) bGrey = true;
 
             /* Test Force linear map */
@@ -280,8 +283,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             const FString &&TempString =
                 FormattedFStringHelper::FormattedFString (
-                    TEXT ("SizeX:{0}, SizeY:{1}, SRGB:{2}, ForceLinear:{3}, VirtualTexture:{4}"),
-                    SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex);
+                    TEXT ("SizeX:{0}, SizeY:{1}, Small:{7}, SRGB:{2}, ForceLinear:{3}, Grey:{5}, Normal:{6}, VirtualTexture:{4} \n"),
+                    SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex, bGrey, bSmallSize);
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempString)
 
             if (bVirtualTex && bConvertVirtualTex)
