@@ -40,8 +40,10 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         virtual void ProcessTexture (UTexture* const& Texture) override
         {
             Texture->CompressionSettings = TextureCompressionSettings::TC_Masks;
+            Texture->SRGB = false;
         }
     };
+
     class FUTextureAssetProcessor_SetAsNormal final : public FUTextureAssetProcessor_SetAs_Base
     {
         virtual void ProcessTexture (UTexture *const &Texture) override
@@ -50,6 +52,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             Texture->SRGB = false;
         }
     };
+
     class FUTextureAssetProcessor_FlipY final : public FUTextureAssetProcessor_SetAs_Base
     {
         virtual void ProcessTexture (UTexture *const &Texture) override
@@ -57,6 +60,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             Texture->bFlipGreenChannel = !static_cast<bool>(Texture->bFlipGreenChannel);
         }
     };
+
     class FUTextureAssetProcessor_SetAsSRGB_On final : public FUTextureAssetProcessor_SetAs_Base
     {
         virtual void ProcessTexture (UTexture* const& Texture) override
