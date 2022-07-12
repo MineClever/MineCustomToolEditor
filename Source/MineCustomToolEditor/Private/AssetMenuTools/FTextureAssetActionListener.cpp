@@ -35,7 +35,6 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target Texture is : %s"), *Texture->GetPathName ());
                 CallConvertProcessor (Texture);
             }
-
         }
 
         virtual void UpdateTagRules ()

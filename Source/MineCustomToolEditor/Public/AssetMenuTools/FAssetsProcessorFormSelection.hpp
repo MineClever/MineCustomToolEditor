@@ -48,6 +48,7 @@ public:
 		TArray<TAsset *> Assets;
 		TArray<FString> FilesPath;
 		bool bHasSourceControl = false;
+		UAssetEditorSubsystem *&&AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
 		if (bSourceControl) {
 			if (FAssetSourceControlHelper::IsSourceControlAvailable ())
 				bHasSourceControl = true;
@@ -62,6 +63,7 @@ public:
 			if (TAsset *Asset = Cast<TAsset> (AssetData.GetAsset ())) {
 				bSpecificAssetType = true | bSpecificAssetType;
 				Assets.Add (Asset);
+				AssetSubSystem->CloseAllEditorsForAsset (Asset);
 				if (bHasSourceControl)
 					FilesPath.Add (AssetData.GetPackage ()->GetPathName());
 			}
