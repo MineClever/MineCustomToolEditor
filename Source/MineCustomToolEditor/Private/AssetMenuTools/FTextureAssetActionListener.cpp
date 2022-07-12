@@ -13,6 +13,51 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
     using namespace MineFormatStringInternal;
 
+    class FUTextureAssetProcessor_SetAsLinearMask :public TAssetsProcessorFormSelection_Builder<UTexture>
+    {
+        virtual void ProcessAssets (TArray<UTexture *> &Assets) override
+        {
+            TArray<UObject *> ObjectsToSave;
+            for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
+                UTexture *const Texture = *TexIt;
+                Texture->Modify ();
+                Texture->CompressionSettings = TextureCompressionSettings::TC_Masks;
+                ObjectsToSave.Add (Texture);
+            }
+            UPackageTools::SavePackagesForObjects (ObjectsToSave);
+        }
+    };
+
+    class FUTextureAssetProcessor_SetAsSRGB_ON :public TAssetsProcessorFormSelection_Builder<UTexture>
+    {
+        virtual void ProcessAssets (TArray<UTexture *> &Assets) override
+        {
+            TArray<UObject *> ObjectsToSave;
+            for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
+                UTexture *const Texture = *TexIt;
+                Texture->Modify ();
+                Texture->SRGB = true;
+                ObjectsToSave.Add (Texture);
+            }
+            UPackageTools::SavePackagesForObjects (ObjectsToSave);
+        }
+    };
+
+    class FUTextureAssetProcessor_SetAsSRGB_OFF :public TAssetsProcessorFormSelection_Builder<UTexture>
+    {
+        virtual void ProcessAssets (TArray<UTexture *> &Assets) override
+        {
+            TArray<UObject *> ObjectsToSave;
+            for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
+                UTexture *const Texture = *TexIt;
+                Texture->Modify ();
+                Texture->SRGB = false;
+                ObjectsToSave.Add (Texture);
+            }
+            UPackageTools::SavePackagesForObjects (ObjectsToSave);
+        }
+    };
+
     class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
     {
     protected:
@@ -73,7 +118,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             while (true) {
                 if (RuleName == TEXT ("srgb")) 
                 {
-                    ArrayCreateFunc (TEXT ("srgb,fx,col,color,d,diffuse,diff"));
+                    ArrayCreateFunc (TEXT ("srgb,fx,col,color,d,diffuse,diff,basecolor"));
                     break;
                 } 
                 if (RuleName == TEXT ("normal"))
@@ -82,11 +127,11 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     break;
                 }
                 if (RuleName == TEXT ("grey")) {
-                    ArrayCreateFunc (TEXT ("op,o,grey"));
+                    ArrayCreateFunc (TEXT ("op,o,grey,opacity,alpha"));
                     break;
                 }
                 if (RuleName == TEXT ("mask")) {
-                    ArrayCreateFunc (TEXT ("op,o,mask,opacity,alpha,silk,arm"));
+                    ArrayCreateFunc (TEXT ("silk,arm"));
                     break;
                 }
                 if (RuleName == TEXT ("forcelinear")) {
@@ -376,23 +421,43 @@ namespace  FTextureAssetActionListener_Internal
         /* Register all commands in this class */
         virtual void RegisterCommands () override
         {
+            uint8 constexpr CommandCount = 5;
+            for (int CommandID =0; CommandID< CommandCount; ++CommandID)
+            {
+                TSharedPtr<FUICommandInfo> MenuCommandInfo;
+                MenuCommandInfoArray.Add (MenuCommandInfo);
+            }
 
-            UI_COMMAND (MenuCommandInfo_0,
+            UI_COMMAND (MenuCommandInfoArray[0],
                 "Auto set Tex Format",
                 "Auto set format for selected texture assets.",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
-            UI_COMMAND (MenuCommandInfo_1,
+            UI_COMMAND (MenuCommandInfoArray[1],
                 "Auto set Pal Tex Format",
                 "Auto set format for selected texture assets.Normal will set as mask.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            UI_COMMAND (MenuCommandInfoArray[2],
+                "Set sRGB ON",
+                "Toggle sRGB ON.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            UI_COMMAND (MenuCommandInfoArray[3],
+                "Set sRGB OFF",
+                "Toggle sRGB OFF.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            UI_COMMAND (MenuCommandInfoArray[4],
+                "Set Masks Format",
+                "set as Linear Masks format for selected texture assets.",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
         }
 
     public:
         /* Command Action Objects */
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
+        TArray<TSharedPtr<FUICommandInfo>> MenuCommandInfoArray;
 
     };
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineTexAssetCtxMenu");
@@ -462,8 +527,12 @@ namespace  FTextureAssetActionListener_Internal
         {
             // Add to Menu
             static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
-            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
-            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
+            for (auto CommandInfo : ToolCommandsInfo.MenuCommandInfoArray)
+            {
+                MenuBuilder.AddMenuEntry (CommandInfo);
+            }
+            //MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
+
         }
 
         static void MappingCommand (
@@ -473,7 +542,7 @@ namespace  FTextureAssetActionListener_Internal
         {
             static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
             CommandList->MapAction (
-                ToolCommandsInfo.MenuCommandInfo_0,
+                ToolCommandsInfo.MenuCommandInfoArray[0],
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
                     AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat> (SelectedAssets)
@@ -482,10 +551,37 @@ namespace  FTextureAssetActionListener_Internal
             );
 
             CommandList->MapAction (
-                ToolCommandsInfo.MenuCommandInfo_1,
+                ToolCommandsInfo.MenuCommandInfoArray[1],
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
                     AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat_Pal> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfoArray[2],
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_ON> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfoArray[3],
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_OFF> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfoArray[4],
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsLinearMask> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
             );
