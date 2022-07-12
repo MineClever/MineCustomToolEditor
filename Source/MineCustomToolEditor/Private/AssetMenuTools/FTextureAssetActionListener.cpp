@@ -20,13 +20,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         virtual void ProcessAssets (TArray<UTexture *> &Assets) override
         {
             TArray<UObject *> ObjectsToSave;
+            TArray<UPackage * > PackagesToReload;
             for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
                 UTexture *const Texture = *TexIt;
                 Texture->Modify ();
                 ProcessTexture (Texture);
                 ObjectsToSave.Add (Texture);
+                PackagesToReload.Add (Texture->GetPackage ());
             }
             UPackageTools::SavePackagesForObjects (ObjectsToSave);
+            UPackageTools::ReloadPackages (PackagesToReload);
         }
 
         virtual void ProcessTexture (UTexture *const &Texture) = 0;
@@ -51,7 +54,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
     {
         virtual void ProcessTexture (UTexture *const &Texture) override
         {
-            Texture->bFlipGreenChannel = !Texture->bFlipGreenChannel;
+            Texture->bFlipGreenChannel = !static_cast<bool>(Texture->bFlipGreenChannel);
         }
     };
     class FUTextureAssetProcessor_SetAsSRGB_On final : public FUTextureAssetProcessor_SetAs_Base
