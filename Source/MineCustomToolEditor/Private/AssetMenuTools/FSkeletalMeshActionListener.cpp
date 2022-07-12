@@ -13,28 +13,28 @@
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
 #define LOC_ASSET_TYPE USkeletalMesh
 
+/* Processor implementation */
 namespace FSkeletalMeshProcessor_AutoSet_Internal
 {
     using namespace MineFormatStringInternal;
 
-    class FSkeletalMeshProcessor_AutoSet :public TAssetsProcessorFormSelection_Builder<LOC_ASSET_TYPE>
+    class FSkeletalMeshProcessor_AutoSet : public TAssetsProcessorFormSelection_Builder<LOC_ASSET_TYPE>
     {
     public:
-
         virtual void ProcessAssets (TArray<LOC_ASSET_TYPE *> &Assets) override
         {
             TArray<UObject *> ObjectToSave;
             for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
-                auto *const SkMesh = *SkIt;
+                auto const SkMesh = *SkIt;
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
                 SkMesh->Modify ();
                 // Do jobs
 
-                for (int32 LodId=0;LodId< SkMesh->GetLODInfoArray().Num();++LodId)
+                for (int32 LodId=0; LodId < SkMesh->GetLODInfoArray().Num();++LodId)
                 {
                     FSkeletalMeshLODInfo* const LODInfoPtr = SkMesh->GetLODInfo(LodId);
                     if (LODInfoPtr) {
-                        FSkeletalMeshBuildSettings BuildOptions= LODInfoPtr->BuildSettings;
+                        FSkeletalMeshBuildSettings BuildOptions = LODInfoPtr->BuildSettings;
 
                         //Adjacency buffer, full precision UV and High precision tangent cannot be change in the re-import options, it must not be change from the original data.
                         BuildOptions.bBuildAdjacencyBuffer = true;
@@ -115,7 +115,7 @@ namespace  FSkeletalMeshActionsMenu_Internal
     using namespace FSkeletalMeshProcessor_AutoSet_Internal;
 
     /* Extension to menu */
-    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<USkeletalMesh>
+    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LOC_ASSET_TYPE>
     {
     public:
 
