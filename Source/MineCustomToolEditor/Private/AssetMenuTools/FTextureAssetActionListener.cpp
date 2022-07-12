@@ -425,8 +425,8 @@ namespace  FTextureAssetActionListener_Internal
         virtual void RegisterCommands () override
         {
             using namespace AssetsProcessorCastHelper;
-            // Build Array
 
+            // 0
             TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
             UI_COMMAND (MenuCommandInfo_0,
                 "Auto set Tex Format",
@@ -436,6 +436,7 @@ namespace  FTextureAssetActionListener_Internal
             MenuCommandInfoActionMap.Emplace (MenuCommandInfo_0, 
                 CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat>);
 
+            // 1
             TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
             UI_COMMAND (MenuCommandInfo_1,
                 "Auto set Pal Tex Format",
@@ -445,6 +446,7 @@ namespace  FTextureAssetActionListener_Internal
             MenuCommandInfoActionMap.Emplace (MenuCommandInfo_1,
                 CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat_Pal>);
 
+            // 2
             TSharedPtr<FUICommandInfo> MenuCommandInfo_2;
             UI_COMMAND (MenuCommandInfo_2,
                 "Set sRGB ON",
@@ -454,6 +456,7 @@ namespace  FTextureAssetActionListener_Internal
             MenuCommandInfoActionMap.Emplace (MenuCommandInfo_2,
                 CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_On>);
 
+            // 3
             TSharedPtr<FUICommandInfo> MenuCommandInfo_3;
             UI_COMMAND (MenuCommandInfo_3,
                 "Set sRGB OFF",
@@ -463,6 +466,7 @@ namespace  FTextureAssetActionListener_Internal
             MenuCommandInfoActionMap.Emplace (MenuCommandInfo_3,
                 CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_Off>);
 
+            // 4
             TSharedPtr<FUICommandInfo> MenuCommandInfo_4;
             UI_COMMAND (MenuCommandInfo_4,
                 "Set Masks Format",
