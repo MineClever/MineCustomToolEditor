@@ -9,8 +9,8 @@ public class MineCustomToolEditor : ModuleRules
 	public MineCustomToolEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		// this.bEnableExceptions = true;
-		// OptimizeCode = CodeOptimization.InShippingBuildsOnly;
-        OptimizeCode = CodeOptimization.Always;
+		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+        // OptimizeCode = CodeOptimization.Always;
 
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

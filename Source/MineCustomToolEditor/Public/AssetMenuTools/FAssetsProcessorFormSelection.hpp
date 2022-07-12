@@ -87,7 +87,7 @@ namespace AssetsProcessorCastHelper
 {
 	template<typename P>
 	static TSharedPtr<FAssetsProcessorFormSelection_Base>
-    FORCEINLINE CreateBaseProcessorPtr (const TArray<FAssetData> &SelectedAssets)
+	FORCEINLINE CreateBaseProcessorPtr (const TArray<FAssetData> &SelectedAssets)
 	{
 		static_assert (
 			std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
