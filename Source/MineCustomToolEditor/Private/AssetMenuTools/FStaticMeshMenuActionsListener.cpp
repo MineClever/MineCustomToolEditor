@@ -1,6 +1,7 @@
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
-#include "UObject/Package.h"
+#include "AssetCreateHelper/FMinePackageSaveHelper.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
@@ -73,23 +74,10 @@ public:
 				Asset->PostSaveRoot (true);
 
 				// Save!!
-				UPackage::Save (Asset->GetPackage (),
-					AssetObject,
-					EObjectFlags::RF_Public | ::RF_Standalone,
-					Asset->GetPathName ().GetCharArray ().GetData (),
-					GError,
-					nullptr,
-					true,
-					true,
-					SAVE_Async
-				);
-
+				MinePackageHelperInternal::SaveUObjectPackage (Asset);
 			}
 		}
-
-
 	};
-
 };
 
 
@@ -130,23 +118,10 @@ public:
 				Asset->Build ();
 
 				// Save!!
-				UPackage::Save (Asset->GetPackage (),
-					AssetObject,
-					EObjectFlags::RF_Public|::RF_Standalone,
-					Asset->GetPathName().GetCharArray().GetData(),
-					GError,
-					nullptr,
-					true,
-					true,
-					SAVE_Async
-				);
-
+				MinePackageHelperInternal::SaveUObjectPackage (Asset);
 			}
 		}
-
-
 	};
-
 };
 
 
@@ -178,22 +153,11 @@ public:
 				Asset->Build ();
 
 				// Save!!
-				UPackage::Save (Asset->GetPackage (),
-					AssetObject,
-					EObjectFlags::RF_Public | ::RF_Standalone,
-					Asset->GetPathName ().GetCharArray ().GetData (),
-					GError,
-					nullptr,
-					true,
-					true,
-					SAVE_Async
-				);
+				MinePackageHelperInternal::SaveUObjectPackage (Asset);
 
 			}
 		}
-
 	};
-
 };
 
 

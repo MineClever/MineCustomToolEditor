@@ -85,7 +85,7 @@ namespace AssetsProcessorCastHelper
 {
 	template<typename P>
 	static TSharedPtr<FAssetsProcessorFormSelection_Base>
-    CreateBaseProcessorPtr (const TArray<FAssetData> &SelectedAssets)
+    FORCEINLINE CreateBaseProcessorPtr (const TArray<FAssetData> &SelectedAssets)
 	{
 		static_assert (
 			std::is_base_of_v<FAssetsProcessorFormSelection_Base, P>,
@@ -105,7 +105,7 @@ namespace AssetsProcessorCastHelper
 	 * @return :                    return true if target type in current selections
 	 */
 	template<typename T>
-	static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets, bool bCanCast = false)
+	FORCEINLINE static bool CheckSelectedTypeTarget (const TArray<FAssetData> &SelectedAssets, bool bCanCast = false)
 	{
 		bool bCurrentType = false;
 		bool bCanCastType = false;

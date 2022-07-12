@@ -175,7 +175,9 @@ namespace MineAssetCreateHelperInternal
                 }
             } // End of (!bStbLib)
             else {
-                // Swap RGBA-> BGRA; 
+                // Swap RGBA-> BGRA;
+                // push %eax
+                // mov %ebx, dword ptr ss[offset] ?
                 for (int Index = 0; Index < RawFileData.Num (); Index += 4) {
                     RawFileData.Swap (Index, Index + 2);
                 }

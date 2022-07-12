@@ -4,6 +4,7 @@
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
+#include "AssetCreateHelper/FMinePackageSaveHelper.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
 
@@ -11,21 +12,6 @@
 namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 {
     using namespace MineFormatStringInternal;
-
-    inline void SaveUObjectPackage (UObject* InObject)
-    {
-        InObject->GetPackage ()->MarkPackageDirty ();
-        UPackage::Save (InObject->GetPackage (),
-            InObject,
-            EObjectFlags::RF_Public | ::RF_Standalone,
-            *InObject->GetPackage ()->GetName (),
-            GError,
-            nullptr,
-            true,
-            true,
-            SAVE_NoError | SAVE_Async
-        );
-    }
 
     class FUTextureAssetProcessor_AutoSetTexFormat :public TAssetsProcessorFormSelection_Builder<UTexture>
     {
@@ -285,7 +271,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             }
 
             /* Save Current Package */
-            SaveUObjectPackage (PTexObj);
+            MinePackageHelperInternal::SaveUObjectPackage (PTexObj);
         }
 
         virtual void ConvertVirtualTexToTex2d (UTexture* const PTexObj) const
@@ -469,7 +455,7 @@ namespace  FTextureAssetActionListener_Internal
 void FTextureAssetActionListener::InstallHooks ()
 {
     using namespace FTextureAssetActionListener_Internal;
-    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
+    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Texture Asset Menu Hook"));
     // register commands
     MineAssetCtxMenuCommandsInfo::Register ();
 

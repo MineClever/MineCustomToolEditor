@@ -31,7 +31,6 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
 
         TSharedRef<FExtender> OnExtendContentBrowserAssetSelectionMenu (const TArray<FAssetData> &SelectedAssets)
         {
-            InitSubMenu ();
 
             static TSharedPtr<FUICommandList> CommandList;
             if (!CommandList.IsValid ())
@@ -46,8 +45,7 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
                     "GetAssetActions",
                     EExtensionHook::After,
                     CommandList,
-                    FMenuExtensionDelegate::CreateStatic (
-                        &CreateActionsSubMenu)
+                    FMenuExtensionDelegate::CreateRaw (this,&TMineContentBrowserExtensions_SelectedAssets_Base::CreateActionsSubMenu)
                 );
             }
             return Extender;
@@ -65,7 +63,7 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
             MenuBuilder.AddSubMenu (
                 BaseMenuName,
                 BaseMenuTip,
-                FNewMenuDelegate::CreateRaw (&PopulateActionsMenu),
+                FNewMenuDelegate::CreateRaw (this,&TMineContentBrowserExtensions_SelectedAssets_Base::PopulateActionsMenu),
                 false,
                 BaseMenuIcon,
                 true,

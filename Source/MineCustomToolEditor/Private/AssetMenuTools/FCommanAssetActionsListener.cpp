@@ -7,188 +7,200 @@
 #define LOCTEXT_NAMESPACE "FCommanAssetActionsListener"
 
 /* Commands */
-class MineAssetCtxMenuCommandsInfo : public TCommands<MineAssetCtxMenuCommandsInfo>
+namespace FCommonAssetActionsMenuCommandsInfo_Internal
 {
-public:
-
-    /* INIT */
-    MineAssetCtxMenuCommandsInfo ()
-        : TCommands<MineAssetCtxMenuCommandsInfo> (
-            TEXT ("MineCommonAssetCtxMenu"), // Context name for fast lookup
-            FText::FromString ("MineCommonAssetCtxMenu"), // Context name for displaying
-            NAME_None,   // No parent context
-            FEditorStyle::GetStyleSetName () // Icon Style Set
-          )
+    class MineAssetCtxMenuCommandsInfo : public TCommands<MineAssetCtxMenuCommandsInfo>
     {
-    }
+    public:
 
-    /* Register all commands in this class */
-    virtual void RegisterCommands () override
-    {
+        /* INIT */
+        MineAssetCtxMenuCommandsInfo ()
+            : TCommands<MineAssetCtxMenuCommandsInfo> (
+                TEXT ("MineCommonAssetCtxMenu"), // Context name for fast lookup
+                FText::FromString ("MineCommonAssetCtxMenu"), // Context name for displaying
+                NAME_None,   // No parent context
+                FEditorStyle::GetStyleSetName () // Icon Style Set
+                )
+        {
+        }
 
-        UI_COMMAND (MenuCommandInfo_0,
-            "Reload selected assets",
-            "Reload selected assets form top package.",
-            EUserInterfaceActionType::Button, FInputGesture ()
-        );
-        UI_COMMAND (MenuCommandInfo_1,
-            "Copy Asset Content Path",
-            "Copy Asset Content Path from selected.",
-            EUserInterfaceActionType::Button, FInputGesture ()
-        );
-    }
+        /* Register all commands in this class */
+        virtual void RegisterCommands () override
+        {
 
-public:
-    /* Command Action Objects */
-    TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
-    TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
+            UI_COMMAND (MenuCommandInfo_0,
+                "Reload selected assets",
+                "Reload selected assets form top package.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            UI_COMMAND (MenuCommandInfo_1,
+                "Copy Asset Content Path",
+                "Copy Asset Content Path from selected.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+        }
+
+    public:
+        /* Command Action Objects */
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
+
+    };
 
 };
-
 
 /* Processor */
-class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection_Base
+namespace FCommonAssetActionProcessors_Internal
 {
-
-    virtual void Execute () override
+    class FCommonAssetReloadPackagesProcessor : public FAssetsProcessorFormSelection_Base
     {
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Reload all selected assets without save"));
-        TArray<UPackage *> AssetPackages;
 
-        for (auto const AssetData: SelectedAssets)
+        virtual void Execute () override
         {
-            UPackage* PackageName = AssetData.GetPackage();
-            AssetPackages.AddUnique (PackageName);
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Reload all selected assets without save"));
+            TArray<UPackage *> AssetPackages;
+
+            for (auto const AssetData : SelectedAssets) {
+                UPackage *PackageName = AssetData.GetPackage ();
+                AssetPackages.AddUnique (PackageName);
+            }
+
+            UPackageTools::ReloadPackages (AssetPackages);
         }
+    };
 
-        UPackageTools::ReloadPackages (AssetPackages);
-    }
-};
-
-class FCommonAssetCopyPackagesPathProcessor : public FAssetsProcessorFormSelection_Base
-{
-
-    virtual void Execute () override
+    class FCommonAssetCopyPackagesPathProcessor : public FAssetsProcessorFormSelection_Base
     {
-        FString StringArrayToCopy = "";
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Copy Assets Path Processor Run !! "));
-        uint32 LoopCount = 1;
-        for (auto const Asset : SelectedAssets) {
-            const FString TempAssetPathName = Asset.GetPackage ()->GetPathName ();
-            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(TempAssetPathName));
-            GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(TempAssetPathName));
-            StringArrayToCopy.Append (TempAssetPathName);
-            StringArrayToCopy.Append ("\n");
-            ++LoopCount;
-        }
-        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
-    }
-};
 
+        virtual void Execute () override
+        {
+            FString StringArrayToCopy = "";
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Copy Assets Path Processor Run !! "));
+            uint32 LoopCount = 1;
+            for (auto const Asset : SelectedAssets) {
+                const FString TempAssetPathName = Asset.GetPackage ()->GetPathName ();
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("%d : %s"), LoopCount, *(TempAssetPathName));
+                GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *(TempAssetPathName));
+                StringArrayToCopy.Append (TempAssetPathName);
+                StringArrayToCopy.Append ("\n");
+                ++LoopCount;
+            }
+            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+        }
+    };
+
+}
 
 
 /* Extension to menu */
-class FMineContentBrowserExtensions_CommonAssets
+namespace FCommonAssetContentBrowserExtensions_Internal
 {
-public:
+    using namespace FCommonAssetActionsMenuCommandsInfo_Internal;
+    using namespace FCommonAssetActionProcessors_Internal;
 
-
-    static void ExecuteProcessor (
-        TSharedPtr<FAssetsProcessorFormSelection_Base> const Processor
-    )
+    class FMineContentBrowserExtensions_CommonAssets
     {
-        Processor->Execute ();
-    }
+    public:
 
-    static TSharedRef<FExtender>
-    OnExtendContentBrowserAssetSelectionMenu (
-        const TArray<FAssetData> &SelectedAssets
-    )
-    {
-        static TSharedPtr<FUICommandList> CommandList;
-
-        if (!CommandList.IsValid())
-            CommandList = MakeShareable (new FUICommandList);
-        TSharedRef<FExtender> Extender (new FExtender ());
-
-        MappingCommand (CommandList,SelectedAssets);
-
-        if (SelectedAssets.Num () > 0) {
-            // Add the Static actions sub-menu extender
-            Extender->AddMenuExtension (
-                "GetAssetActions",
-                EExtensionHook::After,
-                CommandList,
-                FMenuExtensionDelegate::CreateStatic (
-                    &CreateActionsSubMenu)
-            );
+        static void ExecuteProcessor (
+            TSharedPtr<FAssetsProcessorFormSelection_Base> const Processor
+        )
+        {
+            Processor->Execute ();
         }
-        return Extender;
+
+        static TSharedRef<FExtender>
+            OnExtendContentBrowserAssetSelectionMenu (
+                const TArray<FAssetData> &SelectedAssets
+            )
+        {
+            static TSharedPtr<FUICommandList> CommandList;
+
+            if (!CommandList.IsValid ())
+                CommandList = MakeShareable (new FUICommandList);
+            TSharedRef<FExtender> Extender (new FExtender ());
+
+            MappingCommand (CommandList, SelectedAssets);
+
+            if (SelectedAssets.Num () > 0) {
+                // Add the Static actions sub-menu extender
+                Extender->AddMenuExtension (
+                    "GetAssetActions",
+                    EExtensionHook::After,
+                    CommandList,
+                    FMenuExtensionDelegate::CreateStatic (
+                        &CreateActionsSubMenu)
+                );
+            }
+            return Extender;
+        };
+
+        static void CreateActionsSubMenu (
+            FMenuBuilder &MenuBuilder
+        )
+        {
+            const FSlateIcon BaseMenuIcon = FSlateIcon ();
+            const FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Mine Common Asset Actions");
+            const FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for Common Asset.");
+
+            MenuBuilder.AddSubMenu (
+                BaseMenuName,
+                BaseMenuTip,
+                FNewMenuDelegate::CreateStatic (
+                    &PopulateActionsMenu),
+                false,
+                BaseMenuIcon,
+                true,
+                FName (TEXT ("MineAssetsActions"))
+            );
+
+        }
+
+        static void PopulateActionsMenu (
+            FMenuBuilder &MenuBuilder
+        )
+        {
+            // Add to Menu
+            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
+        }
+
+
+        static void MappingCommand (
+            const TSharedPtr<FUICommandList> &CommandList,
+            const TArray<FAssetData> &SelectedAssets
+        )
+        {
+            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfo_0,
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetReloadPackagesProcessor> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfo_1,
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+
+        }
     };
 
-    static void CreateActionsSubMenu (
-        FMenuBuilder &MenuBuilder
-    )
-    {
-        const FSlateIcon BaseMenuIcon = FSlateIcon ();
-        const FText BaseMenuName = LOCTEXT ("ActionsSubMenuLabel", "Mine Common Asset Actions");
-        const FText BaseMenuTip = LOCTEXT ("ActionsSubMenuToolTip", "Type-related actions for Common Asset.");
-
-        MenuBuilder.AddSubMenu (
-            BaseMenuName,
-            BaseMenuTip,
-            FNewMenuDelegate::CreateStatic (
-                &PopulateActionsMenu),
-            false,
-            BaseMenuIcon,
-            true,
-            FName (TEXT ("MineAssetsActions"))
-        );
-
-    }
-
-    static void PopulateActionsMenu (
-        FMenuBuilder &MenuBuilder
-    )
-    {
-        // Add to Menu
-        static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
-        MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
-        MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
-    }
-
-
-    static void MappingCommand (
-        const TSharedPtr<FUICommandList> &CommandList,
-        const TArray<FAssetData> &SelectedAssets
-    )
-    {
-        static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
-        CommandList->MapAction (
-            ToolCommandsInfo.MenuCommandInfo_0,
-            FExecuteAction::CreateStatic(
-                &ExecuteProcessor,
-                AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetReloadPackagesProcessor> (SelectedAssets)
-            ),
-            FCanExecuteAction()
-        );
-        CommandList->MapAction (
-            ToolCommandsInfo.MenuCommandInfo_1,
-            FExecuteAction::CreateStatic (
-                &ExecuteProcessor,
-                AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
-            ),
-            FCanExecuteAction ()
-        );
-        
-    }
-};
+}
 
 
 /* Load to module */
 
 void FCommonAssetActionsListener::InstallHooks()
 {
+    using namespace FCommonAssetContentBrowserExtensions_Internal;
     UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install Common Asset Menu Hook"));
     // register commands
     MineAssetCtxMenuCommandsInfo::Register ();
