@@ -54,7 +54,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bTagRuleExist = true;
         }
 
-        static TArray<FString> CreateRuleFStringArray (const FName &RuleName)
+        virtual TArray<FString> CreateRuleFStringArray (const FName &RuleName)
         {
             /*
              * TODO:
@@ -108,7 +108,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         }
 
     protected:
-        virtual void ConvertProcessor (UTexture *PTexObj,const bool bConvertVirtualTex=false) const
+        virtual void ConvertProcessor (UTexture *PTexObj, const bool bConvertVirtualTex=false, bool bNormAsMask=false) const
         {
             #pragma region TextureObjectProperties
             bool bSRGB = false;
@@ -249,7 +249,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     break;
                 }
                 if (bNorm) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+
+                    LTempCompressionSettings = bNormAsMask ? TextureCompressionSettings ::TC_Masks : TextureCompressionSettings::TC_Normalmap;
                     break;
                 }
                 if (bMask && !bSRGB)
@@ -338,6 +339,14 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
     };
 
+
+    class FUTextureAssetProcessor_AutoSetTexFormat_Pal :public FUTextureAssetProcessor_AutoSetTexFormat
+    {
+        virtual void CallConvertProcessor (UTexture *PTexObj) override
+        {
+            ConvertProcessor (PTexObj, true, true);
+        }
+    };
 }
 
 
@@ -373,12 +382,17 @@ namespace  FTextureAssetActionListener_Internal
                 "Auto set format for selected texture assets.",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
-
+            UI_COMMAND (MenuCommandInfo_1,
+                "Auto set Pal Tex Format",
+                "Auto set format for selected texture assets.Normal will set as mask.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
         }
 
     public:
         /* Command Action Objects */
         TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
 
     };
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineTexAssetCtxMenu");
@@ -449,6 +463,7 @@ namespace  FTextureAssetActionListener_Internal
             // Add to Menu
             static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
         }
 
         static void MappingCommand (
@@ -462,6 +477,15 @@ namespace  FTextureAssetActionListener_Internal
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
                     AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfo_1,
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat_Pal> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
             );
