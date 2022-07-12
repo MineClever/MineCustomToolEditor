@@ -78,6 +78,10 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     ArrayCreateFunc (TEXT ("normal,norm,nor,faxian,n"));
                     break;
                 }
+                if (RuleName == TEXT ("grey")) {
+                    ArrayCreateFunc (TEXT ("op,o,grey"));
+                    break;
+                }
                 if (RuleName == TEXT ("mask")) {
                     ArrayCreateFunc (TEXT ("op,o,mask,opacity,alpha,silk,arm"));
                     break;
@@ -107,6 +111,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bool bSRGB = false;
             bool bNorm = false;
             bool bMask = false;
+            bool bGrey = false;
             bool bForceLinear = false;
             bool bSmallSize = false;
             #pragma endregion TextureObjectProperties
@@ -132,7 +137,6 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             const TSet<FString> &&LFoundTag_SRGB = TagRule_SRGB.Intersect (LTagsSet);
             if (LFoundTag_SRGB.Num () > 0) bSRGB = true;
 
-
             /* Test Normal map */
             const TSet<FString> &&LFoundTag_Normal = TagRule_Normal.Intersect (LTagsSet);
             if (LFoundTag_Normal.Num () > 0) bNorm = true;
@@ -140,6 +144,10 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             /* Test Mask Map*/
             const TSet<FString> &&LFoundTag_Mask = TagRule_Mask.Intersect (LTagsSet);
             if (LFoundTag_Mask.Num () > 0) bMask = true;
+
+            /* Test Grey map*/
+            const TSet<FString> &&LFoundTag_Grey = TagRule_Mask.Intersect (LTagsSet);
+            if (LFoundTag_Grey.Num () > 0) bGrey = true;
 
             /* Test Force linear map */
             const TSet<FString> &&LFoundTag_ForceLinear = TagRule_ForceLinear.Intersect (LTagsSet);
@@ -229,9 +237,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
                 }
                 if (bForceLinear && bMask) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Masks;
+                }
+                if (bForceLinear && bGrey) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Alpha;
                 }
                 if (bForceLinear) {
+                    break;
+                }
+                if (bNorm) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
                     break;
                 }
                 if (bMask && !bSRGB)
@@ -243,10 +258,15 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     LTempCompressionSettings = TextureCompressionSettings::TC_BC7;
                     break;
                 }
-                if (bNorm) {
-                    LTempCompressionSettings = TextureCompressionSettings::TC_Normalmap;
+                if (bGrey && !bSRGB) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Alpha;
                     break;
                 }
+                if (bGrey && bSRGB) {
+                    LTempCompressionSettings = TextureCompressionSettings::TC_Grayscale;
+                    break;
+                }
+
                 // Default
                 LTempCompressionSettings = TextureCompressionSettings::TC_Default;
                 break;
