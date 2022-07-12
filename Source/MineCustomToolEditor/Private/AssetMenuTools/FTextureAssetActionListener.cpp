@@ -29,10 +29,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             UPackageTools::SavePackagesForObjects (ObjectsToSave);
         }
 
-        virtual void ProcessTexture(UTexture* const& Texture)
-        {
-            Texture->CompressionSettings = TextureCompressionSettings::TC_Masks;
-        }
+        virtual void ProcessTexture (UTexture *const &Texture) = 0;
     };
 
     class FUTextureAssetProcessor_SetAsLinearMask final : public FUTextureAssetProcessor_SetAs_Base
@@ -42,7 +39,21 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             Texture->CompressionSettings = TextureCompressionSettings::TC_Masks;
         }
     };
-
+    class FUTextureAssetProcessor_SetAsNormal final : public FUTextureAssetProcessor_SetAs_Base
+    {
+        virtual void ProcessTexture (UTexture *const &Texture) override
+        {
+            Texture->CompressionSettings = TextureCompressionSettings::TC_Normalmap;
+            Texture->SRGB = false;
+        }
+    };
+    class FUTextureAssetProcessor_FlipY final : public FUTextureAssetProcessor_SetAs_Base
+    {
+        virtual void ProcessTexture (UTexture *const &Texture) override
+        {
+            Texture->bFlipGreenChannel = !Texture->bFlipGreenChannel;
+        }
+    };
     class FUTextureAssetProcessor_SetAsSRGB_On final : public FUTextureAssetProcessor_SetAs_Base
     {
         virtual void ProcessTexture (UTexture* const& Texture) override
@@ -476,6 +487,25 @@ namespace  FTextureAssetActionListener_Internal
             MenuCommandInfoActionMap.Emplace (MenuCommandInfo_4,
                 CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsLinearMask>);
 
+            // 5
+            TSharedPtr<FUICommandInfo> MenuCommandInfo_5;
+            UI_COMMAND (MenuCommandInfo_5,
+                "Set Normal Format",
+                "set as NormalMap format for selected texture assets.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_5,
+                CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsNormal>);
+
+            // 6
+            TSharedPtr<FUICommandInfo> MenuCommandInfo_6;
+            UI_COMMAND (MenuCommandInfo_6,
+                "Flip G",
+                "Flip Green(Y) channal for selected texture assets.",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_6,
+                CreateBaseProcessorPtr<FUTextureAssetProcessor_FlipY>);
         }
 
     public:
