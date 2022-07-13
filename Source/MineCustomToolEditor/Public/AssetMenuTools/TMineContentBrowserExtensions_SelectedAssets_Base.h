@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "AssetToolsModule.h"
-#include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
+#include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 
 
@@ -31,7 +31,6 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
         #define FORMAT_COMMAND_INFO(ID, TXT, TIP, CMD) TSharedPtr<FUICommandInfo> MenuCommandInfo_##ID; \
                     UI_COMMAND (MenuCommandInfo_##ID, TXT, TIP, EUserInterfaceActionType::Button, FInputGesture ()); \
                     MenuCommandInfoActionMap.Emplace (MenuCommandInfo_##ID, AssetsProcessorCastHelper::CreateBaseProcessorPtr<##CMD##>);
-
     };
 
     template<typename TAsset, typename TCommand>
@@ -44,6 +43,7 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
         FNsLocTextDescriptions SubMenuTipDescriptions;
         FName SubMenuInExtensionHookName;
         FSlateIcon SubMenuIcon;
+        static FName AssetTypeName;
 
         virtual ~TMineContentBrowserExtensions_SelectedAssets_Base () = default;
 
@@ -122,6 +122,8 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
             }
         };
     };
-
+    
+    template<typename TAsset, typename TCommand>
+    FName TMineContentBrowserExtensions_SelectedAssets_Base<TAsset, TCommand>::AssetTypeName = TAsset::StaticClass ()->GetFName ();
 }
 

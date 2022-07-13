@@ -2,7 +2,7 @@
 #include <AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h>
 #include "PackageTools.h"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
-#include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
+#include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 
 
 
@@ -156,7 +156,7 @@ namespace FSkeletalMeshMenuActionsListener_Internal
     void FSkeletalMeshMenuActionsListener::InstallHooks ()
     {
         // Push Log
-        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install SkeletalMesh Asset Menu Hook"));
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install %s Asset Menu Hook"), *FMineContentBrowserExtensions_SelectedAssets::AssetTypeName.ToString());
 
         // register commands
         MineAssetCtxMenuCommandsInfo::Register ();

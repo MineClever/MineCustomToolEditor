@@ -1,8 +1,9 @@
 ﻿#include <AssetMenuTools/FTextureAssetActionListener.h>
-#include "AssetCreateHelper/FMineStringFormatHelper.h"
-#include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
-#include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
+
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
+#include "AssetCreateHelper/FMineStringFormatHelper.h"
+#include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
+#include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
@@ -115,11 +116,18 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             bTagRuleExist = true;
         }
 
+        /**
+         * @brief : Build TArray<FString> by inputted rule name. like "mask"
+         * @param RuleName :FName
+         * @return :TArray<FString>
+         */
         virtual TArray<FString> CreateRuleFStringArray (const FName &RuleName)
         {
             /*
              * TODO:
              * Read rules form ini...
+             * Store changed rules to ini file
+             * Reset rules
              */
             static TArray<FString> LTempStringArray;
             LTempStringArray.Empty ();
@@ -411,9 +419,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
 
 
-
 /* Menu Commands */
-
 namespace  FTextureAssetActionListener_Internal
 {
     using namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal;
