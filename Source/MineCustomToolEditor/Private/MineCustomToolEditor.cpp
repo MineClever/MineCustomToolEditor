@@ -7,7 +7,7 @@
 #include "AssetMenuTools/FTextureAssetActionListener.h"
 #include "AssetMenuTools/FSkeletalMeshActionListener.h"
 
-IMPLEMENT_GAME_MODULE(FMineToolEditor, MineCustomToolEditor)
+IMPLEMENT_MODULE(FMineToolEditor, MineCustomToolEditor)
 
 #define LOCTEXT_NAMESPACE "MineCustomToolEditor"
 
@@ -31,7 +31,7 @@ void FMineToolEditor::AddModuleListeners ()
     // Add Texture Asset ToolMenu
     ModuleListeners.Emplace (MakeShareable (new FTextureAssetActionListener));
     // Add Skeletal Mesh Asset ToolMenu
-    ModuleListeners.Emplace (MakeShareable(new FSkeletalMeshMenuActionsListener));
+    ModuleListeners.Emplace (MakeShareable(new FSkeletalMeshMenuActionsListener_Internal::FSkeletalMeshMenuActionsListener));
 }
 
 void FMineToolEditor::StartupModule ()

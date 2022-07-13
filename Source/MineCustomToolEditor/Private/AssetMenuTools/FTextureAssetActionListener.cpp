@@ -1,12 +1,9 @@
-﻿#include <functional>
-
-#include <AssetMenuTools/FTextureAssetActionListener.h>
-
-#include "AssetToolsModule.h"
+﻿#include <AssetMenuTools/FTextureAssetActionListener.h>
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
+#include "AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
 
@@ -172,7 +169,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         }
 
     protected:
-        virtual void ConvertProcessor (UTexture *PTexObj, const bool bConvertVirtualTex=false, bool bNormAsMask=false) const
+        virtual void ConvertProcessor (UTexture *PTexObj, const bool bConvertVirtualTex=false, bool const bNormAsMask=false) const
         {
             #pragma region TextureObjectProperties
             bool bSRGB = false;
@@ -349,19 +346,19 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             const FString &&TempString =
                 FormattedFStringHelper::FormattedFString (
                     TEXT ("SizeX:{0}, SizeY:{1}, Small:{7}, SRGB:{2}, ForceLinear:{3}, Grey:{5}, Normal:{6}, VirtualTexture:{4} \n"),
-                    SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex, bGrey, bSmallSize);
+                    SizeX, SizeY, bSRGB, bForceLinear, bVirtualTex, bGrey, bNorm, bSmallSize);
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempString)
 
             if (bVirtualTex && bConvertVirtualTex)
             {
-                ConvertVirtualTexToTex2d (PTexObj);
+                ConvertVirtualTexToTex2d (PTexObj, bNormAsMask);
             }
 
             /* Save Current Package */
             MinePackageHelperInternal::SaveUObjectPackage (PTexObj);
         }
 
-        virtual void ConvertVirtualTexToTex2d (UTexture* const PTexObj) const
+        virtual void ConvertVirtualTexToTex2d (UTexture* const PTexObj,  bool const bNormAsMask = false) const
         {
             using namespace MineAssetCreateHelperInternal;
             //const FAssetToolsModule &AssetToolsModule =
@@ -395,7 +392,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
                     // Reformat
                     if (NewTextureObject != nullptr)
-                        ConvertProcessor (NewTextureObject,false);
+                        ConvertProcessor (NewTextureObject,false, bNormAsMask);
                 }
             }
 
@@ -420,10 +417,9 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 namespace  FTextureAssetActionListener_Internal
 {
     using namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal;
-    using FBaseProcessorFunction = 
-        TFunctionRef<TSharedPtr<FAssetsProcessorFormSelection_Base> (const TArray<FAssetData> &)>;
+    using MineAssetCtxMenuCommands_DataMap = TMineContentBrowserExtensions_SelectedAssets_Internal::MineAssetCtxMenuCommands_CommandMap;
 
-    class MineAssetCtxMenuCommandsInfo final : public TCommands<MineAssetCtxMenuCommandsInfo>
+    class MineAssetCtxMenuCommandsInfo final : public TCommands<MineAssetCtxMenuCommandsInfo>, public MineAssetCtxMenuCommands_DataMap
     {
     public:
 
@@ -442,90 +438,42 @@ namespace  FTextureAssetActionListener_Internal
         /* Register all commands in this class */
         virtual void RegisterCommands () override
         {
-            using namespace AssetsProcessorCastHelper;
 
             // 0
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
-            UI_COMMAND (MenuCommandInfo_0,
-                "Auto set Tex Format",
-                "Auto set format for selected texture assets.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_0, 
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat>);
+            FORMAT_COMMAND_INFO (0, "Auto set Tex Format", "Auto set format for selected texture assets.", FUTextureAssetProcessor_AutoSetTexFormat);
 
             // 1
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
-            UI_COMMAND (MenuCommandInfo_1,
-                "Auto set Pal Tex Format",
-                "Auto set format for selected texture assets.Normal will set as mask.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_1,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_AutoSetTexFormat_Pal>);
+            FORMAT_COMMAND_INFO (1, "Auto set Pal Tex Format", "Auto set format for selected texture assets.Normal will set as mask.", FUTextureAssetProcessor_AutoSetTexFormat_Pal);
 
             // 2
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_2;
-            UI_COMMAND (MenuCommandInfo_2,
-                "Set sRGB ON",
-                "Toggle sRGB ON.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_2,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_On>);
+            FORMAT_COMMAND_INFO (2, "Set sRGB ON", "Toggle sRGB ON.", FUTextureAssetProcessor_SetAsSRGB_On);
 
             // 3
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_3;
-            UI_COMMAND (MenuCommandInfo_3,
-                "Set sRGB OFF",
-                "Toggle sRGB OFF.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_3,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsSRGB_Off>);
+            FORMAT_COMMAND_INFO (3, "Set sRGB OFF", "Toggle sRGB OFF.", FUTextureAssetProcessor_SetAsSRGB_Off);
 
             // 4
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_4;
-            UI_COMMAND (MenuCommandInfo_4,
-                "Set Masks Format",
-                "set as Linear Masks format for selected texture assets.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_4,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsLinearMask>);
+            FORMAT_COMMAND_INFO (4, "Set Masks Format", "set as Linear Masks format for selected texture assets.", FUTextureAssetProcessor_SetAsLinearMask);
 
             // 5
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_5;
-            UI_COMMAND (MenuCommandInfo_5,
-                "Set Normal Format",
-                "set as NormalMap format for selected texture assets.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_5,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_SetAsNormal>);
+            FORMAT_COMMAND_INFO (5, "Set Normal Format", "set as NormalMap format for selected texture assets.", FUTextureAssetProcessor_SetAsNormal);
 
             // 6
-            TSharedPtr<FUICommandInfo> MenuCommandInfo_6;
-            UI_COMMAND (MenuCommandInfo_6,
-                "Flip G",
-                "Flip Green(Y) channal for selected texture assets.",
-                EUserInterfaceActionType::Button, FInputGesture ()
-            );
-            MenuCommandInfoActionMap.Emplace (MenuCommandInfo_6,
-                CreateBaseProcessorPtr<FUTextureAssetProcessor_FlipY>);
+            FORMAT_COMMAND_INFO (6, "Flip G", "Flip Green(Y) channal for selected texture assets.", FUTextureAssetProcessor_FlipY);
+
+
         }
 
-    public:
-        /* Command Action Objects */
-        TMap<TSharedPtr<FUICommandInfo>, FBaseProcessorFunction> MenuCommandInfoActionMap;
     };
 
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineTexAssetCtxMenu");
 
+
     /* Extension to menu */
+    template<typename TCommand>
     class FMineContentBrowserExtensions_SelectedAssets
     {
     public:
+        static_assert(std::is_base_of_v<MineAssetCtxMenuCommands_DataMap, TCommand>, "Not a Valid TCommand Class. Must derived from MineAssetCtxMenuCommands_CommandMap.");
 
         static void ExecuteProcessor (
             TSharedPtr<FAssetsProcessorFormSelection_Base> const Processor
@@ -586,7 +534,7 @@ namespace  FTextureAssetActionListener_Internal
         )
         {
             // Add to Menu
-            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+            static const TCommand &ToolCommandsInfo = TCommand::Get ();
             for (auto CommandInfo : ToolCommandsInfo.MenuCommandInfoActionMap)
             {
                 MenuBuilder.AddMenuEntry (CommandInfo.Key);
@@ -598,7 +546,7 @@ namespace  FTextureAssetActionListener_Internal
             const TArray<FAssetData> &SelectedAssets
         )
         {
-            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
+            static const TCommand &ToolCommandsInfo = TCommand::Get ();
             for (auto CommandInfo : ToolCommandsInfo.MenuCommandInfoActionMap)
             {
                 CommandList->MapAction (CommandInfo.Key,
@@ -625,7 +573,7 @@ void FTextureAssetActionListener::InstallHooks ()
     // Declare Delegate 
     ContentBrowserExtenderDelegate =
         FContentBrowserMenuExtender_SelectedAssets::CreateStatic (
-            &FMineContentBrowserExtensions_SelectedAssets::OnExtendContentBrowserAssetSelectionMenu
+            &FMineContentBrowserExtensions_SelectedAssets<MineAssetCtxMenuCommandsInfo>::OnExtendContentBrowserAssetSelectionMenu
         );
 
     // Get all content module delegates

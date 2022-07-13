@@ -1,27 +1,23 @@
 ﻿#include <AssetMenuTools/FSkeletalMeshActionListener.h>
 #include <AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h>
-#include "AssetToolsModule.h"
 #include "PackageTools.h"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetMenuTools/FAssetsProcessorFormSelection.hpp"
-#include "AssetCreateHelper/FMinePackageSaveHelper.h"
-#include "EditorFramework/AssetImportData.h"
-#include "Engine/SkeletalMeshEditorData.h"
-#include "Rendering/SkeletalMeshModel.h"
+
 
 
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
-#define LOC_ASSET_TYPE USkeletalMesh
+
 
 /* Processor implementation */
 namespace FSkeletalMeshProcessor_AutoSet_Internal
 {
     using namespace MineFormatStringInternal;
 
-    class FSkeletalMeshProcessor_AutoSet : public TAssetsProcessorFormSelection_Builder<LOC_ASSET_TYPE>
+    class FSkeletalMeshProcessor_AutoSet : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {
     public:
-        virtual void ProcessAssets (TArray<LOC_ASSET_TYPE *> &Assets) override
+        virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
         {
             TArray<UObject *> ObjectToSave;
             for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
@@ -70,7 +66,10 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 /* Command Info */
 namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
 {
-    class MineAssetCtxMenuCommandsInfo final : public TCommands<MineAssetCtxMenuCommandsInfo>
+    using namespace FSkeletalMeshProcessor_AutoSet_Internal;
+    using namespace TMineContentBrowserExtensions_SelectedAssets_Internal;
+
+    class MineAssetCtxMenuCommandsInfo final : public TCommands<MineAssetCtxMenuCommandsInfo>, public MineAssetCtxMenuCommands_CommandMap
     {
     public:
 
@@ -89,33 +88,30 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
         /* Register all commands in this class */
         virtual void RegisterCommands () override
         {
-
-            UI_COMMAND (MenuCommandInfo_0,
+            // 0
+            FORMAT_COMMAND_INFO (0,
                 "Auto set SkeletalMesh",
                 "Auto set configs for selected SkeletalMesh assets.",
-                EUserInterfaceActionType::Button, FInputGesture ()
+                FSkeletalMeshProcessor_AutoSet
             );
 
+            // END
+
         }
-
-    public:
-        /* Command Action Objects */
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
-
     };
+    // Init Context Fast look up name
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineUSkeletalMeshAssetCtxMenu");
 
 }
 
 /* Menu Extension */
-namespace  FSkeletalMeshActionsMenu_Internal
+namespace  FSkeletalMeshActionsMenuExtension_Internal
 {
-    using namespace TMineContentBrowserExtensions_SelectedAssets_Internal;
     using namespace FSkeletalMeshActionsMenuCommandsInfo_Internal;
-    using namespace FSkeletalMeshProcessor_AutoSet_Internal;
+    using namespace TMineContentBrowserExtensions_SelectedAssets_Internal;
 
     /* Extension to menu */
-    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LOC_ASSET_TYPE>
+    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, MineAssetCtxMenuCommandsInfo>
     {
     public:
 
@@ -143,60 +139,45 @@ namespace  FSkeletalMeshActionsMenu_Internal
             this->SubMenuIcon = FSlateIcon ();
         }
 
-        virtual void PopulateActionsMenu (FMenuBuilder &MenuBuilder) override
-        {
-            // Add to Menu
-            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
-            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
-        }
-
-        virtual void MappingCommand(const TSharedPtr<FUICommandList> &CommandList,
-            const TArray<FAssetData> &SelectedAssets ) override
-        {
-            static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
-
-            CommandList->MapAction (
-                ToolCommandsInfo.MenuCommandInfo_0,
-                FExecuteAction::CreateStatic (
-                    &ExecuteProcessor,
-                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FSkeletalMeshProcessor_AutoSet> (SelectedAssets)
-                ),
-                FCanExecuteAction ()
-            );
-        }
     };
 };
 
 
 /* Load to module */
-
-TSharedRef<TMineContentBrowserExtensions_SelectedAssets_Internal::TMineContentBrowserExtensions_SelectedAssets_Base<LOC_ASSET_TYPE>>
-FSkeletalMeshMenuActionsListener::MenuExtension =
-    MakeShareable (new FSkeletalMeshActionsMenu_Internal::FMineContentBrowserExtensions_SelectedAssets);
-
-void FSkeletalMeshMenuActionsListener::InstallHooks ()
+namespace FSkeletalMeshMenuActionsListener_Internal
 {
-    using namespace FSkeletalMeshActionsMenu_Internal;
-    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install SkeletalMesh Asset Menu Hook"));
-    // register commands
-    MineAssetCtxMenuCommandsInfo::Register ();
+    using namespace FSkeletalMeshActionsMenuExtension_Internal;
 
-    // Declare Delegate 
-    ContentBrowserExtenderDelegate =
-        FContentBrowserMenuExtender_SelectedAssets::CreateSP (
-            MenuExtension,
-            &FMineContentBrowserExtensions_SelectedAssets::OnExtendContentBrowserAssetSelectionMenu
-        );
+    // Important : Init Extension Class
+    TSharedRef<TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, MineAssetCtxMenuCommandsInfo>>
+        FSkeletalMeshMenuActionsListener::MenuExtension = 
+            MakeShareable (new FMineContentBrowserExtensions_SelectedAssets);
 
+    void FSkeletalMeshMenuActionsListener::InstallHooks ()
+    {
+        // Push Log
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install SkeletalMesh Asset Menu Hook"));
 
-    // Get all content module delegates
-    TArray<FContentBrowserMenuExtender_SelectedAssets>
-        &CBMenuExtenderDelegates = GetExtenderDelegates ();
+        // register commands
+        MineAssetCtxMenuCommandsInfo::Register ();
 
-    // Add The delegate of mine
-    CBMenuExtenderDelegates.Add (ContentBrowserExtenderDelegate);
-    ContentBrowserExtenderDelegateHandle = CBMenuExtenderDelegates.Last ().GetHandle ();
+        // Declare Delegate 
+        ContentBrowserExtenderDelegate =
+            FContentBrowserMenuExtender_SelectedAssets::CreateSP (
+                MenuExtension,
+                &FMineContentBrowserExtensions_SelectedAssets::OnExtendContentBrowserAssetSelectionMenu
+            );
+
+        // Get all content module delegates
+        TArray<FContentBrowserMenuExtender_SelectedAssets> &CBMenuExtenderDelegates = GetExtenderDelegates ();
+
+        // Add The delegate of mine
+        CBMenuExtenderDelegates.Add (ContentBrowserExtenderDelegate);
+
+        // Store handle
+        ContentBrowserExtenderDelegateHandle = CBMenuExtenderDelegates.Last ().GetHandle ();
+    }
 }
 
-#undef LOC_ASSET_TYPE
+
 #undef LOCTEXT_NAMESPACE

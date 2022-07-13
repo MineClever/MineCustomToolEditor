@@ -8,9 +8,36 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
 {
     using namespace MineFormatStringInternal;
 
-    template<typename TAsset>
+    /**
+     * @brief : Load for MenuCommandInfoActionMap and FORMAT_COMMAND_INFO Macro
+     */
+    class MineAssetCtxMenuCommands_CommandMap
+    {
+    public:
+        using FBaseProcessorFunction =
+            TFunctionRef<TSharedPtr<FAssetsProcessorFormSelection_Base> (const TArray<FAssetData> &)>;
+
+        /* Command Action Objects */
+        TMap<TSharedPtr<FUICommandInfo>, FBaseProcessorFunction> MenuCommandInfoActionMap;
+
+
+        /**
+         * @brief : Help to bind Command Class to this->MenuCommandInfoActionMap
+         * @param ID : int type; Index of Command
+         * @param TXT : Command Name to Show
+         * @param TIP : Command Tip ,when point on Command Name
+         * @param CMD : Command Class to Register
+        */
+        #define FORMAT_COMMAND_INFO(ID, TXT, TIP, CMD) TSharedPtr<FUICommandInfo> MenuCommandInfo_##ID; \
+                    UI_COMMAND (MenuCommandInfo_##ID, TXT, TIP, EUserInterfaceActionType::Button, FInputGesture ()); \
+                    MenuCommandInfoActionMap.Emplace (MenuCommandInfo_##ID, AssetsProcessorCastHelper::CreateBaseProcessorPtr<##CMD##>);
+
+    };
+
+    template<typename TAsset, typename TCommand>
     class TMineContentBrowserExtensions_SelectedAssets_Base
     {
+        static_assert(std::is_base_of_v<MineAssetCtxMenuCommands_CommandMap, TCommand>, "Not a Valid TCommand Class. Must derived from MineAssetCtxMenuCommands_CommandMap.");
     public:
 
         FNsLocTextDescriptions SubMenuDescriptions;
@@ -72,14 +99,28 @@ namespace  TMineContentBrowserExtensions_SelectedAssets_Internal
 
         }
 
-        virtual void PopulateActionsMenu (
-            FMenuBuilder &MenuBuilder
-        ) = 0;
+        virtual void PopulateActionsMenu (FMenuBuilder &MenuBuilder)
+        {
+            // Add to Menu
+            static const TCommand &ToolCommandsInfo = TCommand::Get ();
+            for (auto CommandInfo : ToolCommandsInfo.MenuCommandInfoActionMap) {
+                MenuBuilder.AddMenuEntry (CommandInfo.Key);
+            }
+        }
 
         virtual void MappingCommand (
             const TSharedPtr<FUICommandList> &CommandList,
             const TArray<FAssetData> &SelectedAssets
-        ) = 0;
+        )
+        {
+            static const TCommand &ToolCommandsInfo = TCommand::Get ();
+            for (auto CommandInfo : ToolCommandsInfo.MenuCommandInfoActionMap) {
+                CommandList->MapAction (CommandInfo.Key,
+                    FExecuteAction::CreateStatic (&ExecuteProcessor, CommandInfo.Value (SelectedAssets)),
+                    FCanExecuteAction ()
+                );
+            }
+        };
     };
 
 }
