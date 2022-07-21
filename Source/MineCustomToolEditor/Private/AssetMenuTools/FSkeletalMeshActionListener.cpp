@@ -90,7 +90,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
                         uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
                         FName CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
-                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatName as %s @ Section %d"), *CurMatSlotName.ToString(), SectionId);
+                        FName CurMatImpName  = AllMats[CurSectionMatId].ImportedMaterialSlotName;
+                        FString CurMatPath = AllMats[CurSectionMatId].MaterialInterface->GetPathName();
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatImpName %s as SlotName %s @ Section %d; Path @ %s"), *CurMatImpName.ToString(), *CurMatSlotName.ToString(), SectionId, *CurMatPath);
                     }
                 }
 
