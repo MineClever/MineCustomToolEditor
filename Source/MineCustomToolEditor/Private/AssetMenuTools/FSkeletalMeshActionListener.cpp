@@ -3,7 +3,7 @@
 #include "PackageTools.h"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
-
+#include "Rendering/SkeletalMeshRenderData.h"
 
 
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
@@ -25,7 +25,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
                 SkMesh->Modify ();
                 // Do jobs
-
                 for (int32 LodId=0; LodId < SkMesh->GetLODInfoArray().Num();++LodId)
                 {
                     FSkeletalMeshLODInfo* const LODInfoPtr = SkMesh->GetLODInfo(LodId);
@@ -56,6 +55,40 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 }
 
                 SkMesh->Build ();
+                ObjectToSave.Add (SkMesh);
+            }
+            UPackageTools::SavePackagesForObjects (ObjectToSave);
+        }
+    };
+
+    /**
+     * @brief Export Material Slots information into JSON table
+     */
+    class FSkeletalMeshProcessor_ClothToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
+    {
+        virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
+        {
+            TArray<UObject *> ObjectToSave;
+            for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
+                auto const SkMesh = *SkIt;
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
+                SkMesh->Modify ();
+                // Do jobs
+                for (int32 LodId = 0; LodId < SkMesh->GetLODInfoArray ().Num (); ++LodId) {
+                    int SectionsNum = 0;
+                    // get sections number
+                    if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
+                        TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
+                        if (LodRenderData.IsValidIndex (LodId)) {
+                            SectionsNum = LodRenderData[LodId].RenderSections.Num ();
+                        }
+                    }
+                    SkMesh->SetHasActiveClothingAssets (false);
+                    //TArray<UClothingAssetBase *> AllClothData = SkMesh->GetMeshClothingAssets ();
+
+                }
+
+                // SkMesh->Build ();
                 ObjectToSave.Add (SkMesh);
             }
             UPackageTools::SavePackagesForObjects (ObjectToSave);
@@ -94,6 +127,14 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
                 "Auto set configs for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoSet
             );
+
+            // 1
+            FORMAT_COMMAND_INFO (1,
+                "Clothing Off",
+                "Take Clothing Effects off for selected SkeletalMesh assets.",
+                FSkeletalMeshProcessor_ClothToMatSlots
+            );
+            
 
             // END
 

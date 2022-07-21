@@ -318,13 +318,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     break;
                 }
                 if (bNorm) {
-
-                    LTempCompressionSettings = bNormAsMask ? TextureCompressionSettings ::TC_Masks : TextureCompressionSettings::TC_Normalmap;
+                    LTempCompressionSettings = bNormAsMask ? TextureCompressionSettings::TC_BC7 : TextureCompressionSettings::TC_Normalmap;
+                    if (bNormAsMask) {
+                        LTempLossyCompression = ETextureLossyCompressionAmount::TLCA_None;
+                    }
                     break;
                 }
                 if (bMask && !bSRGB)
                 {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Masks;
+                    LTempLossyCompression = ETextureLossyCompressionAmount::TLCA_None;
                     break;
                 }
                 if (bMask && bSRGB) {
@@ -333,6 +336,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                 }
                 if (bGrey && !bSRGB) {
                     LTempCompressionSettings = TextureCompressionSettings::TC_Alpha;
+                    LTempLossyCompression = ETextureLossyCompressionAmount::TLCA_None;
                     break;
                 }
                 if (bGrey && bSRGB) {
