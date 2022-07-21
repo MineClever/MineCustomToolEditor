@@ -72,17 +72,22 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             uint16 const LodId = 0;
 
             for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
+                // Do jobs
                 auto const SkMesh = *SkIt;
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
                 SkMesh->Modify ();
-                // Do jobs
-                    // Found Material Name on Section
+
+                // Found Materials
                 TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
+
+                // Found Current Object Folder Path
+                auto FolderPath = SkMesh->GetPackage ()->GetFullGroupName (false);
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("FolderPath = %s"), *FolderPath);
 
                 // get sections number
                 int SectionsNum = 0;
                 if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
-                    
+                    // Find Mat by Section
                     TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
                     if (LodRenderData.IsValidIndex (LodId)) {
                         SectionsNum = LodRenderData[LodId].RenderSections.Num ();
@@ -92,7 +97,19 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         FName CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
                         FName CurMatImpName  = AllMats[CurSectionMatId].ImportedMaterialSlotName;
                         FString CurMatPath = AllMats[CurSectionMatId].MaterialInterface->GetPathName();
-                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatImpName %s as SlotName %s @ Section %d; Path @ %s"), *CurMatImpName.ToString(), *CurMatSlotName.ToString(), SectionId, *CurMatPath);
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatImpName %s as SlotName %s @ Section %d; Path @ %s"),
+                            *CurMatImpName.ToString(), *CurMatSlotName.ToString(), SectionId, *CurMatPath);
+                    }
+
+                    // Find Mat by MatIndex
+                    for (int MatId =0; MatId < AllMats.Num();++MatId)
+                    {
+                        FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+                        FName CurMatImpName = AllMats[MatId].ImportedMaterialSlotName;
+                        FString CurMatPath = AllMats[MatId].MaterialInterface->GetPathName ();
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatImpName %s as SlotName %s @ Id %d; Path @ %s\n"),
+                            *CurMatImpName.ToString (), *CurMatSlotName.ToString (), MatId, *CurMatPath);
+
                     }
                 }
 
@@ -101,6 +118,20 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             }
             // UPackageTools::SavePackagesForObjects (ObjectToSave);
         }
+
+        /**
+         * @brief :Check if Slot name based Abc File in inputted Abc Directory Path
+         * @param MatSlotName :FName
+         * @param AbcDirPath :FString
+         * @param MatchedObjectPath :FString
+         * @return : if Matched Abc StaticMesh Name
+         */
+        bool HasFoundAbcFile (const FName & MatSlotName,const FString & AbcDirPath, FString & MatchedObjectPath)
+        {
+            return false;
+        }
+
+
     };
 }
 
