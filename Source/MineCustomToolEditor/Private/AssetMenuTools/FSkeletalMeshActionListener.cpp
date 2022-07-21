@@ -62,30 +62,36 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
     };
 
     /**
-     * @brief Export Material Slots information into JSON table
+     * @brief 
      */
-    class FSkeletalMeshProcessor_ClothToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
+    class FSkeletalMeshProcessor_AbcClothBindToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {
         virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
         {
             TArray<UObject *> ObjectToSave;
+            uint16 const LodId = 0;
+
             for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
                 auto const SkMesh = *SkIt;
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
                 SkMesh->Modify ();
                 // Do jobs
-                for (int32 LodId = 0; LodId < SkMesh->GetLODInfoArray ().Num (); ++LodId) {
-                    int SectionsNum = 0;
-                    // get sections number
-                    if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
-                        TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
-                        if (LodRenderData.IsValidIndex (LodId)) {
-                            SectionsNum = LodRenderData[LodId].RenderSections.Num ();
-                        }
-                    }
-                    SkMesh->SetHasActiveClothingAssets (false);
-                    //TArray<UClothingAssetBase *> AllClothData = SkMesh->GetMeshClothingAssets ();
+                    // Found Material Name on Section
+                TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
 
+                // get sections number
+                int SectionsNum = 0;
+                if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
+                    
+                    TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
+                    if (LodRenderData.IsValidIndex (LodId)) {
+                        SectionsNum = LodRenderData[LodId].RenderSections.Num ();
+                    }
+                    for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
+                        uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
+                        FName CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatName as %s"), *CurMatSlotName.ToString());
+                    }
                 }
 
                 // SkMesh->Build ();
@@ -128,13 +134,6 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
                 FSkeletalMeshProcessor_AutoSet
             );
 
-            // 1
-            FORMAT_COMMAND_INFO (1,
-                "Clothing Off",
-                "Take Clothing Effects off for selected SkeletalMesh assets.",
-                FSkeletalMeshProcessor_ClothToMatSlots
-            );
-            
 
             // END
 
