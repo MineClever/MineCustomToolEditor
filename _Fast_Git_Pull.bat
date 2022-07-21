@@ -1,0 +1,5 @@
+:: pull
+
+git pull
+
+pause
