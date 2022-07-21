@@ -90,14 +90,14 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
                         uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
                         FName CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
-                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatName as %s"), *CurMatSlotName.ToString());
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatName as %s @ Section %d"), *CurMatSlotName.ToString(), SectionId);
                     }
                 }
 
                 // SkMesh->Build ();
-                ObjectToSave.Add (SkMesh);
+                // ObjectToSave.Add (SkMesh);
             }
-            UPackageTools::SavePackagesForObjects (ObjectToSave);
+            // UPackageTools::SavePackagesForObjects (ObjectToSave);
         }
     };
 }
@@ -134,6 +134,13 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
                 FSkeletalMeshProcessor_AutoSet
             );
 
+            // 1
+            FORMAT_COMMAND_INFO (1,
+                "Set ABC Mat",
+                "Auto set Alembic Static Mesh Materials for selected SkeletalMesh assets.",
+                FSkeletalMeshProcessor_AbcClothBindToMatSlots
+
+            );
 
             // END
 
