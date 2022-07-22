@@ -134,6 +134,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         for (auto AbcDirPath : AbcPathArray)
                         {
                             UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                            if (!FPaths::DirectoryExists (AbcDirPath)) continue;
+
                             FString MatchedPackagePath;
                             if (HasFoundClothAbcFile (CurMatSlotName, AbcDirPath, MatchedPackagePath))
                             {
@@ -190,16 +192,14 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
          */
         static bool HasFoundClothAbcFile (const FName & MatSlotName,const FString & AbcDirPath, FString & MatchedPackagePath)
         {
-            if (FPaths::DirectoryExists(AbcDirPath))
-            {
-                MatchedPackagePath = FPaths::ConvertRelativePathToFull(AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
-                FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
-                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
-                if (FPackageName::DoesPackageExist (MatchedPackagePath))
-                {
-                    return true;
-                }
+
+            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
+            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
+            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
+            if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
+                return true;
             }
+
             return false;
         }
 
