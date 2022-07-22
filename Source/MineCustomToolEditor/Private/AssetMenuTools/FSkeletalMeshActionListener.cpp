@@ -242,7 +242,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 for (uint16 LodId=0;LodId< SkMesh->GetLODNum ();++LodId)
                 {
 
-                    // Find Mat by Section
+                    // Find by Section
                     TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
                     uint16 SectionsNum = 0;
 
@@ -252,11 +252,13 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     }
                     else continue;
 
-                    for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
+                    for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) 
+                    {
                         uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
                         FName const CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
-                        for (uint16 ClothDataId =0; ClothDataId< AllClothData.Num();++ClothDataId)
+                        for (uint16 ClothDataId =0; ClothDataId< AllClothData.Num(); ++ClothDataId)
                         {
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Section: %d; MatSlotName: %s"), SectionId, *CurMatSlotName.ToString());
                             if (AllClothData[ClothDataId]->GetFName () == CurMatSlotName)
                             {
                                 // Set Current Section to Matched ClothData
@@ -269,6 +271,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 }
                 ObjectToSave.Emplace (SkMesh);
             }
+            // UPackageTools::SavePackagesForObjects (ObjectToSave);
         }
     };
 
@@ -309,11 +312,16 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
             // 1
             FORMAT_COMMAND_INFO (1,
                 "Set ABC Mat",
-                "Auto set Alembic Static Mesh Materials for selected SkeletalMesh assets.",
+                "Auto set Alembic GeometryCache Materials reference to selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AbcClothBindToMatSlots
-
             );
 
+            // 2
+            FORMAT_COMMAND_INFO (2,
+                "Set Mat Cloth",
+                "Auto set Existed Cloth Data for selected SkeletalMesh assets.",
+                FSkeletalMeshProcessor_AutoBindClothData
+            );
             // END
 
         }
