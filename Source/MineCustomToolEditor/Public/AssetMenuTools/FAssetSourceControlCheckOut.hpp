@@ -296,7 +296,7 @@ public:
 						SCFilesToAdd.Add (SCFile);
 					}
 					else {
-						bCannotAddAtLeastOneFile = bAdd?false:true;
+						bCannotAddAtLeastOneFile = bAdd?true:false;
 					}
 
 					if (SCState->CanCheckout ())
