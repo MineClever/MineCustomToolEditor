@@ -18,6 +18,7 @@ public class MineCustomToolEditor : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[] {
 				Path.Combine(ModuleDirectory,"../ThirdPart/stb"),
+                Path.Combine(ModuleDirectory,"../Plugins/Experimental/GeometryCache"),
                 // ... add public include paths required here ...
 			}
 			);
@@ -48,7 +49,8 @@ public class MineCustomToolEditor : ModuleRules
                 "ComponentVisualizers",
                 "SourceControl",
 				"RHI",
-				"ImageWrapper"
+				"ImageWrapper",
+				"GeometryCache",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);

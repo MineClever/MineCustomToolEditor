@@ -8,7 +8,7 @@
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Rendering/SkeletalMeshRenderData.h"
-
+#include "GeometryCache.h"
 
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
 
@@ -130,14 +130,10 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     for (int MatId =0; MatId < AllMats.Num();++MatId)
                     {
                         FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
-                        FString CurMatPath = AllMats[MatId].MaterialInterface->GetPathName ();
-
-                        //UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatImpName %s as SlotName %s @ Id %d; Path @ %s\n"),
-                        //    *CurMatImpName.ToString (), *CurMatSlotName.ToString (), MatId, *CurMatPath);
 
                         for (auto AbcDirPath : AbcPathArray)
                         {
-                            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Searching @ %s"), *AbcDirPath);
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
                             FString MatchedPackagePath;
                             if (HasFoundClothAbcFile (CurMatSlotName, AbcDirPath, MatchedPackagePath))
                             {
@@ -146,26 +142,43 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 
                                 if (FAssetSourceControlHelper::IsSourceControlAvailable())
                                 {
-                                    FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath);
+                                    if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath))
+                                    {
+                                        UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Fail to checkout @ %s"), *MatchedPackagePath);
+                                        continue;
+                                    }
                                 }
 
-                                auto AbcAsset = LoadAsset(MatchedPackagePath);
+                                auto const AbcAsset = LoadAsset(MatchedPackagePath);
                                 if (IsValid(AbcAsset))
                                 {
-                                    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Load as UObject @ %s"), *AbcAsset->GetFullName ());
-                                }
+                                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
 
-                                
+                                    // check if abc type
+                                    if (AbcAsset->StaticClass()->GetFName() != UGeometryCache::StaticClass()->GetFName())
+                                    {
+                                        UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache"), *AbcAsset->GetFullName ());
+                                        continue;
+                                    }
+
+                                    auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
+                                    GeoCache->Modify ();
+                                    TArray<UMaterialInterface*> GeoCacheMatArray = GeoCache->Materials;
+
+                                    // Replace Current Mat
+                                    for (uint16 GeoMatId=0;GeoMatId<GeoCacheMatArray.Num();++GeoMatId)
+                                    {
+                                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Change to Mat @ %s"), *AllMats[MatId].MaterialInterface->GetName ());
+                                        GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
+                                    }
+                                    ObjectToSave.Add (AbcAsset);
+                                }
                             }
                         }
-
                     }
                 }
-
-                // SkMesh->Build ();
-                // ObjectToSave.Add (SkMesh);
             }
-            // UPackageTools::SavePackagesForObjects (ObjectToSave);
+            UPackageTools::SavePackagesForObjects (ObjectToSave);
         }
 
         /**
