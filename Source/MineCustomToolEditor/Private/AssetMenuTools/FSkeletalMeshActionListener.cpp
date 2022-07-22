@@ -142,26 +142,21 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 
                                 if (FAssetSourceControlHelper::IsSourceControlAvailable())
                                 {
-                                    if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath))
-                                    {
-                                        UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Fail to checkout @ %s"), *MatchedPackagePath);
-                                        continue;
-                                    }
+                                    FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath);
                                 }
 
                                 auto const AbcAsset = LoadAsset(MatchedPackagePath);
                                 if (IsValid(AbcAsset))
                                 {
                                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
+                                    auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
 
                                     // check if abc type
-                                    if (AbcAsset->StaticClass()->GetFName() != UGeometryCache::StaticClass()->GetFName())
-                                    {
+                                    if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
                                         UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache"), *AbcAsset->GetFullName ());
                                         continue;
                                     }
 
-                                    auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
                                     GeoCache->Modify ();
                                     TArray<UMaterialInterface*> GeoCacheMatArray = GeoCache->Materials;
 
@@ -171,6 +166,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Change to Mat @ %s"), *AllMats[MatId].MaterialInterface->GetName ());
                                         GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
                                     }
+                                    // Update Mat
+                                    GeoCache->Materials = GeoCacheMatArray;
                                     ObjectToSave.Add (AbcAsset);
                                 }
                             }
