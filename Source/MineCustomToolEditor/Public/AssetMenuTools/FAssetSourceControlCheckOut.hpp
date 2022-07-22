@@ -250,6 +250,12 @@ public:
         else return bCanCheckOut;
     }
 
+	static bool CheckOutFile (const FString &File)
+    {
+		TArray<FString> const TempStringArray = {File};
+		return CheckOutFiles (TempStringArray);
+    }
+
 	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent=false, bool bAdd = true)
 	{
 		// Determine file type and ensure it is in form source control wants
