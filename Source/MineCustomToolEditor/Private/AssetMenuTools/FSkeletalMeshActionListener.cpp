@@ -163,7 +163,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                     // Replace Current Mat
                                     for (uint16 GeoMatId=0;GeoMatId<GeoCacheMatArray.Num();++GeoMatId)
                                     {
-                                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Change to Mat @ %s"), *AllMats[MatId].MaterialInterface->GetName ());
                                         GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
                                     }
                                     // Update Mat
