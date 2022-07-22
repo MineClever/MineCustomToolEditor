@@ -1,6 +1,8 @@
 ﻿#include <AssetMenuTools/FSkeletalMeshActionListener.h>
 #include <AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h>
 
+#include "ClothingAssetBase.h"
+
 #include "AssetCreateHelper/FMinePackageToObjectHelper.hpp"
 #include "PackageTools.h"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
@@ -112,22 +114,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 // get sections number
                 int SectionsNum = 0;
                 if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
-                    // Find Mat by Section
-                    //TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
-                    //if (LodRenderData.IsValidIndex (LodId)) {
-                    //    SectionsNum = LodRenderData[LodId].RenderSections.Num ();
-                    //}
-                    //for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
-                    //    uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
-                    //    FName CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
-                    //    FName CurMatImpName  = AllMats[CurSectionMatId].ImportedMaterialSlotName;
-                    //    FString CurMatPath = AllMats[CurSectionMatId].MaterialInterface->GetPathName();
-                    //    UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatImpName %s as SlotName %s @ Section %d; Path @ %s"),
-                    //        *CurMatImpName.ToString(), *CurMatSlotName.ToString(), SectionId, *CurMatPath);
-                    //}
 
                     // Find Mat by MatIndex
-                    for (int MatId =0; MatId < AllMats.Num();++MatId)
+                    for (uint16 MatId =0; MatId < AllMats.Num();++MatId)
                     {
                         FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
 
@@ -142,7 +131,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
                                 // Load Asset to UObject to modify
 
-                                auto const AbcAsset = MinePackageLoadHelper::LoadAsset(MatchedPackagePath);
+                                UObject* const AbcAsset = MinePackageLoadHelper::LoadAsset(MatchedPackagePath);
                                 if (IsValid(AbcAsset))
                                 {
                                     // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
@@ -155,14 +144,14 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                     }
 
                                     TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
-
+                                    // Check if valid Mat on GeometryCache
                                     if (GeoCacheMatArray.Num()>0)
                                     {
                                         // Check if Already Material has been set
                                         if (GeoCacheMatArray[0]->GetPathName () == AllMats[MatId].MaterialInterface->GetPathName ())
                                         {
                                             continue;
-                                        };
+                                        }
                                     }
                                     else continue;
 
@@ -179,6 +168,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                     {
                                         GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
                                     }
+
                                     // Update Mat
                                     GeoCache->Materials = GeoCacheMatArray;
                                     ObjectToSave.Add (AbcAsset);
@@ -215,7 +205,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
         static void MakeRelativeAbcDirPath (const FString & MatPackagePath, TArray<FString> &AbcPathArray)
         {
             AbcPathArray.Empty ();
-           
+            // Path @ [CurrentAssetDir]/Animations/Alembic
             FString TempDirPath;
             FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
             TempDirPath = FPaths::GetPath (TempDirPath) / TEXT ("Animations/Alembic");
@@ -229,6 +219,59 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
         }
 
     };
+
+    class FSkeletalMeshProcessor_AutoBindClothData : public TAssetsProcessorFormSelection_Builder<LocAssetType>
+    {
+        virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
+        {
+            TArray<UObject *> ObjectToSave;
+            
+            for (LocAssetType* const SkMesh : Assets)
+            {
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
+
+
+                // Found Materials
+                TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
+
+                // Found ClothData
+                TArray<UClothingAssetBase*> AllClothData = SkMesh->GetMeshClothingAssets();
+                
+
+                SkMesh->Modify ();
+                for (uint16 LodId=0;LodId< SkMesh->GetLODNum ();++LodId)
+                {
+
+                    // Find Mat by Section
+                    TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
+                    uint16 SectionsNum = 0;
+
+                    if (LodRenderData.IsValidIndex (LodId)) {
+                        if (!LodRenderData[LodId].HasClothData ()) continue;
+                        SectionsNum = LodRenderData[LodId].RenderSections.Num ();
+                    }
+                    else continue;
+
+                    for (int SectionId = 0; SectionId < SectionsNum; ++SectionId) {
+                        uint16 const CurSectionMatId = LodRenderData[LodId].RenderSections[SectionId].MaterialIndex;
+                        FName const CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
+                        for (uint16 ClothDataId =0; ClothDataId< AllClothData.Num();++ClothDataId)
+                        {
+                            if (AllClothData[ClothDataId]->GetFName () == CurMatSlotName)
+                            {
+                                // Set Current Section to Matched ClothData
+                                //LodRenderData[LodId].RenderSections[SectionId].ClothingData.AssetGuid = AllClothData[ClothDataId]->GetAssetGuid ();
+                                AllClothData[ClothDataId]->BindToSkeletalMesh (SkMesh,LodId,SectionId,0);
+                                break;
+                            }
+                        }
+                    }
+                }
+                ObjectToSave.Emplace (SkMesh);
+            }
+        }
+    };
+
 }
 
 /* Command Info */
