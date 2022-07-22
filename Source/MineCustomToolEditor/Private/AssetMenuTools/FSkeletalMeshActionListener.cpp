@@ -133,7 +133,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                         for (auto AbcDirPath : AbcPathArray)
                         {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                            // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
                             if (!FPaths::DirectoryExists (AbcDirPath)) continue;
 
                             FString MatchedPackagePath;
@@ -141,19 +141,11 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             {
                                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
                                 // Load Asset to UObject to modify
-                                
-                                if (FAssetSourceControlHelper::IsSourceControlAvailable())
-                                {
-                                    if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath))
-                                    {
-                                        continue;
-                                    }
-                                }
 
                                 auto const AbcAsset = MinePackageLoadHelper::LoadAsset(MatchedPackagePath);
                                 if (IsValid(AbcAsset))
                                 {
-                                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
+                                    // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
                                     auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
 
                                     // check if abc type
@@ -162,10 +154,27 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                         continue;
                                     }
 
-                                    GeoCache->Modify ();
-                                    TArray<UMaterialInterface*> GeoCacheMatArray = GeoCache->Materials;
+                                    TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
+
+                                    if (GeoCacheMatArray.Num()>0)
+                                    {
+                                        // Check if Already Material has been set
+                                        if (GeoCacheMatArray[0]->GetPathName () == AllMats[MatId].MaterialInterface->GetPathName ())
+                                        {
+                                            continue;
+                                        };
+                                    }
+                                    else continue;
+
+                                    // Check Out file to Modify
+                                    if (FAssetSourceControlHelper::IsSourceControlAvailable ()) {
+                                        if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath)) {
+                                            continue;
+                                        }
+                                    }
 
                                     // Replace Current Mat
+                                    GeoCache->Modify ();
                                     for (uint16 GeoMatId=0;GeoMatId<GeoCacheMatArray.Num();++GeoMatId)
                                     {
                                         GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
@@ -195,7 +204,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
             MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
-            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
+            // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
             if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
                 return true;
             }
