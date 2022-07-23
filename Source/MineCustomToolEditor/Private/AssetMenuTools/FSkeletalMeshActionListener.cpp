@@ -20,7 +20,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
     class FDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
     {
-    private:
+    protected:
         virtual bool Visit (const TCHAR *FilenameOrDirectory, bool bIsDirectory) override
         {
             if (bIsDirectory) {
@@ -90,17 +90,18 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
     public:
         FSkeletalMeshProcessor_AbcClothBindToMatSlots():TAssetsProcessorFormSelection_Builder<LocAssetType>(false)
         {
-            // Without SourceControl
+            // Without SourceControl init
         }
 
         virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
         {
 
             TArray<UObject *> ObjectToSave;
-            uint16 const LodId = 0;
+            bool const IsSourceControlValid = FAssetSourceControlHelper::IsSourceControlAvailable ();
 
             for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
-                // Do jobs
+
+                // Start job!
                 auto const SkMesh = *SkIt;
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
 
@@ -111,75 +112,65 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 // Found Materials
                 TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
 
-                // get sections number
-                int SectionsNum = 0;
-                if (SkMesh->GetResourceForRendering () && SkMesh->GetResourceForRendering ()->LODRenderData.Num () > 0) {
+                // Find Mat by MatIndex
+                for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+                    FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+                    // Traversal all Alembic Sub-Path
+                    for (auto AbcDirPath : AbcPathArray) {
+                        // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                        if (!FPaths::DirectoryExists (AbcDirPath)) continue;
 
-                    // Find Mat by MatIndex
-                    for (uint16 MatId =0; MatId < AllMats.Num();++MatId)
-                    {
-                        FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+                        FString MatchedPackagePath;
+                        // Make sure SlotNamed Abc Package path is valid, Or Skip
+                        if (!HasFoundClothAbcFile (CurMatSlotName, AbcDirPath, MatchedPackagePath))
+                            continue;
 
-                        for (auto AbcDirPath : AbcPathArray)
-                        {
-                            // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
-                            if (!FPaths::DirectoryExists (AbcDirPath)) continue;
+                        // Load Asset to UObject to modify
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
+                        UObject *const AbcAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+                        if (! IsValid(AbcAsset)) continue;
+                        
 
-                            FString MatchedPackagePath;
-                            if (HasFoundClothAbcFile (CurMatSlotName, AbcDirPath, MatchedPackagePath))
-                            {
-                                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
-                                // Load Asset to UObject to modify
+                        // Check if abc type
+                        auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
+                        if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
+                            UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache, SKIP\n"), *AbcAsset->GetFullName ());
+                            continue;
+                        }
 
-                                UObject* const AbcAsset = MinePackageLoadHelper::LoadAsset(MatchedPackagePath);
-                                if (IsValid(AbcAsset))
-                                {
-                                    // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Load as @ %s"), *AbcAsset->GetFullName ());
-                                    auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
+                        // Get Current Geometry Materials
+                        TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
 
-                                    // check if abc type
-                                    if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
-                                        UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache"), *AbcAsset->GetFullName ());
-                                        continue;
-                                    }
+                        // Check if valid Mat on GeometryCache
+                        if (GeoCacheMatArray.Num () > 0) {
+                            // Check if Already Material has been set
+                            if (GeoCacheMatArray[0]->GetPathName () == AllMats[MatId].MaterialInterface->GetPathName ())
+                                continue;
+                        }
+                        else continue;
 
-                                    TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
-                                    // Check if valid Mat on GeometryCache
-                                    if (GeoCacheMatArray.Num()>0)
-                                    {
-                                        // Check if Already Material has been set
-                                        if (GeoCacheMatArray[0]->GetPathName () == AllMats[MatId].MaterialInterface->GetPathName ())
-                                        {
-                                            continue;
-                                        }
-                                    }
-                                    else continue;
-
-                                    // Check Out file to Modify
-                                    if (FAssetSourceControlHelper::IsSourceControlAvailable ()) {
-                                        if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath)) {
-                                            continue;
-                                        }
-                                    }
-
-                                    // Replace Current Mat
-                                    GeoCache->Modify ();
-                                    for (uint16 GeoMatId=0;GeoMatId<GeoCacheMatArray.Num();++GeoMatId)
-                                    {
-                                        GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
-                                    }
-
-                                    // Update Mat
-                                    GeoCache->Materials = GeoCacheMatArray;
-                                    ObjectToSave.Add (AbcAsset);
-                                }
+                        // Check Out file to Modify
+                        if (IsSourceControlValid) {
+                            if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath)) {
+                                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s Can't checkout, SKIP\n"), *AbcAsset->GetFullName ());
+                                continue;
                             }
                         }
-                    }
-                }
-            }
+
+                        // Replace Current Mat
+                        GeoCache->Modify ();
+                        for (uint16 GeoMatId = 0; GeoMatId < GeoCacheMatArray.Num (); ++GeoMatId) {
+                            GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
+                        }
+
+                        // Update GeometryCache Materials
+                        GeoCache->Materials = GeoCacheMatArray;
+                        ObjectToSave.Add (AbcAsset);
+                    } // Terminate Traversal AbcPathArray
+                } // End Of Iterator of MatIds
+            } // End of Iterator Of Assets
             UPackageTools::SavePackagesForObjects (ObjectToSave);
-        }
+        } // End Of ProcessAssets
 
         /**
          * @brief :Check if Slot name based Abc File in inputted Abc Directory Path
@@ -217,8 +208,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 AbcPathArray = Visitor.DirectoryArray;
             }
         }
-
-    };
+    }; // End Of Class
 
     class FSkeletalMeshProcessor_AutoBindClothData : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {

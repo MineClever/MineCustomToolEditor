@@ -7,7 +7,7 @@
 
 namespace MinePackageLoadHelper
 {
-    static bool IsPackageFlagsSupportedForAssetLibrary (uint32 PackageFlags)
+    FORCEINLINE bool IsPackageFlagsSupportedForAssetLibrary (uint32 PackageFlags)
     {
         return (PackageFlags & (PKG_ContainsMap | PKG_PlayInEditor | PKG_ContainsMapData)) == 0;
     }
@@ -236,7 +236,7 @@ namespace MinePackageLoadHelper
 
     static UObject *LoadAsset (const FString &AssetPath, bool bAllowMapAsset, FString &OutFailureReason)
     {
-        FAssetData AssetData = FindAssetDataFromAnyPath (AssetPath, OutFailureReason);
+        FAssetData const AssetData = FindAssetDataFromAnyPath (AssetPath, OutFailureReason);
         if (!AssetData.IsValid ()) {
             return nullptr;
         }
