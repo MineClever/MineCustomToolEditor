@@ -172,7 +172,7 @@ public:
         // Add Extension
         auto const ExtenstionDelegate =
             FLayersModule::FLayersMenuExtender::CreateStatic (&FLayerManagerMenuExtend::ExtenderMenu);
-        LayersModule.GetAllLayersMenuExtenders ().Add (ExtenstionDelegate);
+        LayersModule.GetAllLayersMenuExtenders ().Emplace (ExtenstionDelegate);
 
     }
 

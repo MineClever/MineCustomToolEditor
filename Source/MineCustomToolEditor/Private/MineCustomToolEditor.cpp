@@ -6,6 +6,7 @@
 #include "AssetMenuTools/FCommonAssetActionsListener.h"
 #include "AssetMenuTools/FTextureAssetActionListener.h"
 #include "AssetMenuTools/FSkeletalMeshActionListener.h"
+#include "SequencerExtension/SequencerBaseMenuAction.h"
 
 IMPLEMENT_MODULE(FMineToolEditor, MineCustomToolEditor)
 
@@ -32,6 +33,9 @@ void FMineToolEditor::AddModuleListeners ()
     ModuleListeners.Emplace (MakeShareable (new FTextureAssetActionListener));
     // Add Skeletal Mesh Asset ToolMenu
     ModuleListeners.Emplace (MakeShareable(new FSkeletalMeshMenuActionsListener_Internal::FSkeletalMeshMenuActionsListener));
+
+    // Add Sequencer Base Menu Action
+    ModuleListeners.Emplace (MakeShareable (new FMineSequencerBaseMenuAction_Internal::FMineSequencerBaseExtensionLoader));
 }
 
 void FMineToolEditor::StartupModule ()
