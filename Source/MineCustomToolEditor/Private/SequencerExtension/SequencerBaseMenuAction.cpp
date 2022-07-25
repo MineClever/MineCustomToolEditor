@@ -35,17 +35,29 @@ namespace FMineSequencerBaseMenuAction_Internal
         static TSharedRef<FExtender> CreateFExtender (const TSharedRef<FUICommandList> InCommandList,const TArray<UObject *> InUObject)
         {
             TSharedPtr<FExtender> MenuExtender = MakeShareable (new FExtender());
-            if (HasValidType<USkeletalMesh>(InUObject),true)
-            {
-                MenuExtender->AddMenuExtension (
-                    TEXT ("Spawnable"),
-                    EExtensionHook::Before,
-                    InCommandList,
-                    FMenuExtensionDelegate::CreateStatic (&FMineSequenceBaseMenuActionExtension::CreateActionsSubMenu, InCommandList,  InUObject)
-                );
-            }
+            MenuExtender->AddMenuExtension (
+                TEXT ("Spawnable"),
+                EExtensionHook::Before,
+                InCommandList,
+                FMenuExtensionDelegate::CreateStatic (&FMineSequenceBaseMenuActionExtension::CreateActionsSubMenu, InCommandList, InUObject)
+            );
 
             return MenuExtender.ToSharedRef();
+        }
+
+        static TSharedPtr<FExtender> CreateFExtender ()
+        {
+            UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s"), TEXT ("Debug: Create Empty CommandList"));
+            TArray<UObject *> TempUObjects;
+            TSharedRef<FUICommandList> const CommandList = MakeShareable (new FUICommandList);
+            TSharedPtr<FExtender> MenuExtender = MakeShareable (new FExtender ());
+            MenuExtender->AddMenuExtension (
+                TEXT ("Spawnable"),
+                EExtensionHook::Before,
+                CommandList,
+                FMenuExtensionDelegate::CreateStatic (&FMineSequenceBaseMenuActionExtension::CreateActionsSubMenu, CommandList, TempUObjects)
+            );
+            return MenuExtender;
         }
 
         static void CreateActionsSubMenu (
@@ -95,6 +107,7 @@ namespace FMineSequencerBaseMenuAction_Internal
 
         // Init
         ExtenderDelegates = FMineSequencerBaseExtensionLoader::GetSequencerExt ()->GetExtenderDelegates ();
+        
 
         // Create Delegate
         auto BaseMenuActionExtDelegate = FAssetEditorExtender::CreateStatic (&FMineSequenceBaseMenuActionExtension::CreateFExtender);
@@ -105,6 +118,10 @@ namespace FMineSequencerBaseMenuAction_Internal
         // Add to Handles to remove
         FDelegateHandle BaseMenuActionExtDelegateHandle = ExtenderDelegates.Last().GetHandle();
         ExtenderHandles.Emplace (BaseMenuActionExtDelegateHandle);
+
+
+        // Debug
+        FMineSequencerBaseExtensionLoader::GetSequencerExt ()->AddExtender (FMineSequenceBaseMenuActionExtension::CreateFExtender ());
 
     }
 
@@ -117,8 +134,11 @@ namespace FMineSequencerBaseMenuAction_Internal
                 [&](const FAssetEditorExtender &Delegate)->bool {
                     return Delegate.GetHandle() == Handle;
                 }
-            );
+            );//End RemoveAll method
         }
+
+        // Remove
+        FMineSequencerBaseExtensionLoader::GetSequencerExt ()->RemoveExtender (UserFExtender);
     }
 }
 

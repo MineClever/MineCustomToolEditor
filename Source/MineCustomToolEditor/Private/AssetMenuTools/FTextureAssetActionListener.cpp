@@ -407,9 +407,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                         ConvertProcessor (NewTextureObject,false, bNormAsMask);
                 }
             }
-
         } // End of ConvertVirtualTexToTex2d
-
     };
 
     class FUTextureAssetProcessor_AutoSetTexFormat_Pal :public FUTextureAssetProcessor_AutoSetTexFormat

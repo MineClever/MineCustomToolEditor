@@ -14,6 +14,7 @@ namespace FMineSequencerBaseMenuAction_Internal
 
     protected:
         TArray<FDelegateHandle> ExtenderHandles;
+        TSharedRef<FExtender> UserFExtender;
 
     public:
 
