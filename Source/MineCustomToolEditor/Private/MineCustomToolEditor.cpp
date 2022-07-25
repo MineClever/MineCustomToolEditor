@@ -33,7 +33,6 @@ void FMineToolEditor::AddModuleListeners ()
     ModuleListeners.Emplace (MakeShareable (new FTextureAssetActionListener));
     // Add Skeletal Mesh Asset ToolMenu
     ModuleListeners.Emplace (MakeShareable(new FSkeletalMeshMenuActionsListener_Internal::FSkeletalMeshMenuActionsListener));
-
     // Add Sequencer Base Menu Action
     ModuleListeners.Emplace (MakeShareable (new FMineSequencerBaseMenuAction_Internal::FMineSequencerBaseExtensionLoader));
 }

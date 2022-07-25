@@ -10,24 +10,33 @@ namespace FMineSequencerBaseMenuAction_Internal
     class FMineSequencerBaseExtensionLoader : public IMineCustomToolModuleListenerInterface
     {
     private:
-        TArray<FAssetEditorExtender> ExtenderDelegates;
-
-    protected:
-        TArray<FDelegateHandle> ExtenderHandles;
-        TSharedRef<FExtender> UserFExtender;
-
-    public:
-
-        virtual void OnStartupModule () override;
-        virtual void OnShutdownModule () override;
-
-        static TSharedPtr<FExtensibilityManager> GetSequencerExt ()
+        static TSharedPtr<FExtensibilityManager> GetSequencerCtxMenuExt ()
         {
             // NOTE: Get SequencerModule && FExtensibilityManager
             const ISequencerModule &SequencerModule = FModuleManager::Get ().LoadModuleChecked<ISequencerModule> ("Sequencer");
             TSharedPtr<FExtensibilityManager> Manager = SequencerModule.GetObjectBindingContextMenuExtensibilityManager ();
             return Manager;
         }
+        static TSharedPtr<FExtensibilityManager> GetSequencerBarExt ()
+        {
+            // NOTE: Get SequencerModule && FExtensibilityManager
+            const ISequencerModule &SequencerModule = FModuleManager::Get ().LoadModuleChecked<ISequencerModule> ("Sequencer");
+            TSharedPtr<FExtensibilityManager> Manager = SequencerModule.GetToolBarExtensibilityManager ();
+            return Manager;
+        }
+
+    protected:
+        TArray<TSharedPtr<FExtender>> CtxExtenderPtrArray;
+        TArray<TSharedPtr<FExtender>> BarExtenderPtrArray;
+        TSharedPtr<FExtensibilityManager> ObjBindCtxExtensibilityManager = FMineSequencerBaseExtensionLoader::GetSequencerCtxMenuExt ();
+        TSharedPtr<FExtensibilityManager> ToolBarExtensibilityManager = FMineSequencerBaseExtensionLoader::GetSequencerBarExt ();
+
+    public:
+
+        virtual void OnStartupModule () override;
+        virtual void OnShutdownModule () override;
+
+
     };
 
 }
