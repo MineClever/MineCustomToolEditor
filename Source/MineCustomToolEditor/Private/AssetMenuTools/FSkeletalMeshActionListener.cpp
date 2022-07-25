@@ -294,22 +294,23 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
         {
             // 0
             FORMAT_COMMAND_INFO (0,
-                "Auto set SkeletalMesh",
+                "Auto set SkMesh Prop",
                 "Auto set configs for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoSet
             );
 
             // 1
             FORMAT_COMMAND_INFO (1,
-                "Set ABC Mat",
-                "Auto set Alembic GeometryCache Materials reference to selected SkeletalMesh assets.",
+                "Set ABC-Cloth Mat",
+                "Auto set Alembic GeometryCache Materials reference to selected SkeletalMesh assets.\n"
+                "such that it has been followed by [CurrentAssetDir]/Animations/Alembic/[SubDir]/Cloth/[MatSlotName]",
                 FSkeletalMeshProcessor_AbcClothBindToMatSlots
             );
 
             // 2
             FORMAT_COMMAND_INFO (2,
-                "Set Mat Cloth",
-                "Auto set Existed Cloth Data for selected SkeletalMesh assets.",
+                "Set Cloth to MatSlot",
+                "Auto set existed Cloth-Data with matched slot name for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoBindClothData
             );
             // END
