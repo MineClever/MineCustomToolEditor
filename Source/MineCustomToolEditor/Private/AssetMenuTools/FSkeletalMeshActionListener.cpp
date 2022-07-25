@@ -236,6 +236,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     TIndirectArray<FSkeletalMeshLODRenderData> &LodRenderData = SkMesh->GetResourceForRendering ()->LODRenderData;
                     uint16 SectionsNum = 0;
 
+                    // Make sure that the Sections is valid!
                     if (LodRenderData.IsValidIndex (LodId)) {
                         if (!LodRenderData[LodId].HasClothData ()) continue;
                         SectionsNum = LodRenderData[LodId].RenderSections.Num ();
@@ -248,7 +249,11 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         FName const CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
                         for (uint16 ClothDataId =0; ClothDataId< AllClothData.Num(); ++ClothDataId)
                         {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Section: %d; MatSlotName: %s"), SectionId, *CurMatSlotName.ToString());
+                            // Log Me
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Section: %d; MatSlotName: %s; ClothDataName: %s"),
+                                SectionId, *CurMatSlotName.ToString(), *(AllClothData[ClothDataId]->GetFName ().ToString()));
+
+                            // Check if matched material slot
                             if (AllClothData[ClothDataId]->GetFName () == CurMatSlotName)
                             {
                                 // Set Current Section to Matched ClothData
@@ -257,13 +262,13 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 break;
                             }
                         }
-                    }
+                    }// End Traversal SectionsNum
                 }
                 ObjectToSave.Emplace (SkMesh);
             }
             // UPackageTools::SavePackagesForObjects (ObjectToSave);
         }
-    };
+    }; // End Of Class
 
 }
 

@@ -51,6 +51,7 @@ public class MineCustomToolEditor : ModuleRules
 				"RHI",
 				"ImageWrapper",
 				"GeometryCache",
+                "Sequencer",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
