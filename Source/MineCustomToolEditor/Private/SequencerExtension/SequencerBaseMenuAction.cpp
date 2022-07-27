@@ -5,6 +5,7 @@
 #include "ISequencer.h"
 #include "ILevelSequenceEditorToolkit.h"
 #include "MovieScene.h"
+#include "Tracks/MovieScenePrimitiveMaterialTrack.h"
 
 
 #define LOCTEXT_NAMESPACE "FMineSequencerBaseMenuAction"
@@ -101,6 +102,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             if (!IsValid(ProxyMaterial))
             {
                 /* Load WorldDefault Material to replace */
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to Load Default World Material;\n"));
                 ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
                 if (!IsValid (ProxyMaterial))
                 {
@@ -134,9 +136,14 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                     TArray<UMovieSceneTrack*> CurBindingTracks = Binding->GetTracks();
                     for(UMovieSceneTrack* const Track : CurBindingTracks)
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Track Name : %s;\n"), *Track->GetTrackName ().ToString());
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Info :%s, %s;\n"), *Track->GetDisplayName().ToString(), *Track->GetClass ()->GetName ());
+                        if (Track->GetClass ()->GetFName () == UMovieScenePrimitiveMaterialTrack::StaticClass()->GetFName())
+                        {
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Has MaterialTrack;\n"));
+                        }
                     }
                 }
+
             }
         }
     };

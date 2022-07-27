@@ -55,6 +55,7 @@ public class MineCustomToolEditor : ModuleRules
                 "LevelSequence",
                 "LevelSequenceEditor",
 				"MovieScene",
+				"MovieSceneTracks"
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
