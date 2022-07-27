@@ -205,8 +205,9 @@ namespace FMineSequencerBaseMenuAction_Internal
 			NewTrack->MaterialIndex = MaterialIndex;
 			NewTrack->SetDisplayName(FText::Format(LOCTEXT("MaterialTrackName_Format", "ClothProxyMatSlot_{0}"),
 												   FText::AsNumber(MaterialIndex)));
+			UMovieSceneSection* &&NewMaterialSection = NewTrack->CreateNewSection();
 
-			NewTrack->AddSection(*NewTrack->CreateNewSection());
+			NewTrack->AddSection(*NewMaterialSection);
 
 			SequencerEditor->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
 		}
