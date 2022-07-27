@@ -92,24 +92,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempDebugString);
             GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *TempDebugString);
 
-            /* Path to Proxy material */
-            static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
-            static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
 
-            /* Load Mat to Object */
-            UObject* ProxyMaterial = MinePackageLoadHelper::LoadAsset(ProxyMatPath);
-            
-            if (!IsValid(ProxyMaterial))
-            {
-                /* Load WorldDefault Material to replace */
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to Load Default World Material;\n"));
-                ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
-                if (!IsValid (ProxyMaterial))
-                {
-                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Cant Load Default World Material !!!;\n"));
-                    return;
-                }
-            }
 
             // Find Sequence
             TSharedPtr<ISequencer> SequencerEditor;
@@ -160,12 +143,30 @@ namespace FMineSequencerBaseMenuAction_Internal
 {
     class FMineSequencerAction_SetHiddenProxyMatKey
     {
-        /* Path to Proxy material */
-        static FString HiddenProxyMaterialPath;
+    public:
+        static bool LoadHiddenProxyMat (UObject * &ProxyMaterial)
+        {
+            /* Path to Proxy material */
+            static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
+            static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
+
+            /* Load Mat to Object */
+            ProxyMaterial = MinePackageLoadHelper::LoadAsset (ProxyMatPath);
+
+            if (!IsValid (ProxyMaterial)) {
+                /* Load WorldDefault Material to replace */
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to Load Default World Material;\n"));
+                ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
+                if (!IsValid (ProxyMaterial)) {
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Cant Load Default World Material !!!;\n"));
+                    ProxyMaterial = nullptr;
+                    return false;
+                }
+            }
+            return true;
+        }
     };
 
-    FString FMineSequencerAction_SetHiddenProxyMatKey::HiddenProxyMaterialPath = 
-        TEXT("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
 
 }
 
@@ -225,8 +226,11 @@ namespace FMineSequencerBaseMenuAction_Internal
                 CommandList->MapAction ( BaseMenuAction_CommandInfo.UICommandInfoArray[##ID##], \
                     FExecuteAction::CreateStatic (&##FUNC##),FCanExecuteAction () \
                 );
-            // 0
-            BIND_UI_COMMAND_TO_SLOT (0, FTestAction::RunTest);
+
+            for (int i=0;i < BaseMenuAction_CommandInfo.UICommandInfoArray.Num();++i)
+            {
+                BIND_UI_COMMAND_TO_SLOT (i, FTestAction::RunTest);
+            }
 
             #undef BIND_UI_COMMAND_TO_SLOT
         }
