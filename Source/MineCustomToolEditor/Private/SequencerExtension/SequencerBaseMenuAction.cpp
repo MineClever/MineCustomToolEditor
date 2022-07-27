@@ -93,9 +93,21 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
             /* Path to Proxy material */
             static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
+            static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
 
             /* Load Mat to Object */
             UObject* ProxyMaterial = MinePackageLoadHelper::LoadAsset(ProxyMatPath);
+            
+            if (!IsValid(ProxyMaterial))
+            {
+                /* Load WorldDefault Material to replace */
+                ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
+                if (!IsValid (ProxyMaterial))
+                {
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Cant Load Default World Material !!!;\n"));
+                    return;
+                }
+            }
 
             // Find Sequence
             TSharedPtr<ISequencer> SequencerEditor;
@@ -115,6 +127,15 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                     if (Binding==nullptr) continue;
                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Sequence Object %s Has been selected in Sequencer Editor;\n"), *Binding->GetName ());
 
+                    // Make a track to add material switcher
+
+                    /* Check if already valid material switch track here */
+
+                    TArray<UMovieSceneTrack*> CurBindingTracks = Binding->GetTracks();
+                    for(UMovieSceneTrack* const Track : CurBindingTracks)
+                    {
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Track Name : %s;\n"), *Track->GetTrackName ().ToString());
+                    }
                 }
             }
         }
@@ -180,7 +201,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             // 0
             ADD_UI_COMMAND_INFO (0, "Auto Bind Hidden Mat", "Try to set Hidden Material for current selection in sequencer editor");
 
-            #undef #define ADD_UI_COMMAND_INFO
+            #undef ADD_UI_COMMAND_INFO
         }
 
         // Mapping FUICommandList
