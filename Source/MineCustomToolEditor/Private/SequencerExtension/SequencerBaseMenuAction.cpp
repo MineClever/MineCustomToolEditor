@@ -122,6 +122,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                 SequencerEditor->GetSelectedObjects (BindingsGuid);
                 UMovieScene* SequencerMovieScene = LevelSequence->GetMovieScene();
 
+
                 // Find Binding in Current Sequence
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Sequence is %s;\n"), *LevelSequence->GetName ());
                 for (FGuid Guid : BindingsGuid) {
@@ -139,9 +140,13 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Info :%s, %s;\n"), *Track->GetDisplayName().ToString(), *Track->GetClass ()->GetName ());
                         if (Track->GetClass ()->GetFName () == UMovieScenePrimitiveMaterialTrack::StaticClass()->GetFName())
                         {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Has MaterialTrack;\n"));
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Track %s is MaterialTrack;\n"), *Track->GetDisplayName ().ToString ());
                         }
                     }
+
+                    /* Add new Material Switcher Track */
+                    // Ref to \Engine\Source\Editor\MovieSceneTools\Private\TrackEditors\PrimitiveMaterialTrackEditor.cpp
+
                 }
 
             }
