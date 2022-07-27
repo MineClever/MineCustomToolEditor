@@ -92,8 +92,6 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempDebugString);
             GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *TempDebugString);
 
-
-
             // Find Sequence
             TSharedPtr<ISequencer> SequencerEditor;
             ULevelSequence* const LevelSequence = FSequencerHelperFunctions::GetFocusSequence(SequencerEditor);
@@ -103,13 +101,19 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                 // Tool
                 TArray<FGuid> BindingsGuid;
                 SequencerEditor->GetSelectedObjects (BindingsGuid);
-                UMovieScene* SequencerMovieScene = LevelSequence->GetMovieScene();
+                UMovieScene* MovieScene = LevelSequence->GetMovieScene();
 
+
+				auto GetMaterialIndexForTrack = [](UMovieSceneTrack *InTrack)
+				{
+					UMovieScenePrimitiveMaterialTrack *MaterialTrack = Cast<UMovieScenePrimitiveMaterialTrack>(InTrack);
+					return MaterialTrack ? MaterialTrack->MaterialIndex : INDEX_NONE;
+				};
 
                 // Find Binding in Current Sequence
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Sequence is %s;\n"), *LevelSequence->GetName ());
                 for (FGuid Guid : BindingsGuid) {
-                    FMovieSceneBinding* const Binding = SequencerMovieScene->FindBinding(Guid);
+                    FMovieSceneBinding* const Binding = MovieScene->FindBinding(Guid);
                     if (Binding==nullptr) continue;
                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Sequence Object %s Has been selected in Sequencer Editor;\n"), *Binding->GetName ());
 
@@ -129,6 +133,30 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                     /* Add new Material Switcher Track */
                     // Ref to \Engine\Source\Editor\MovieSceneTools\Private\TrackEditors\PrimitiveMaterialTrackEditor.cpp
+
+					int32 MinNumMaterials = TNumericLimits<int32>::Max();
+					for (TWeakObjectPtr<> WeakObject :SequencerEditor->FindObjectsInCurrentSequence(Guid))
+					{
+						UPrimitiveComponent *PrimitiveComponent = Cast<UPrimitiveComponent>(WeakObject.Get());
+						if (PrimitiveComponent)
+						{
+							MinNumMaterials = FMath::Min(MinNumMaterials, PrimitiveComponent->GetNumMaterials());
+						}
+					}
+
+                    if (MinNumMaterials > 0 && MinNumMaterials < TNumericLimits<int32>::Max())
+					{
+						for (int32 Index = 0; Index < MinNumMaterials; ++Index)
+						{
+                            // Create Material Track, if not in current tracks
+							const bool bAlreadyExists = Algo::FindBy(CurBindingTracks, Index, GetMaterialIndexForTrack) != nullptr;
+							if (!bAlreadyExists)
+							{
+								
+							}
+						}
+					}
+
 
                 }
 
@@ -165,6 +193,23 @@ namespace FMineSequencerBaseMenuAction_Internal
             }
             return true;
         }
+
+		static void CreateTrackForMeshElement(UMovieScene *MovieScene, TSharedPtr<ISequencer> SequencerEditor,
+										  FGuid ObjectBindingID, int32 MaterialIndex)
+		{
+			FScopedTransaction Transaction(LOCTEXT("CreateTrack", "Create Material Track"));
+			MovieScene->Modify();
+
+			UMovieScenePrimitiveMaterialTrack *NewTrack =
+				MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack>(ObjectBindingID);
+			NewTrack->MaterialIndex = MaterialIndex;
+			NewTrack->SetDisplayName(FText::Format(LOCTEXT("MaterialTrackName_Format", "ClothProxyMatSlot_{0}"),
+												   FText::AsNumber(MaterialIndex)));
+
+			NewTrack->AddSection(*NewTrack->CreateNewSection());
+
+			SequencerEditor->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
+		}
     };
 
 
