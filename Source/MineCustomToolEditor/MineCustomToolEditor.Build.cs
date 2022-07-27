@@ -52,6 +52,9 @@ public class MineCustomToolEditor : ModuleRules
 				"ImageWrapper",
 				"GeometryCache",
                 "Sequencer",
+                "LevelSequence",
+                "LevelSequenceEditor",
+				"MovieScene",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -70,9 +73,9 @@ public class MineCustomToolEditor : ModuleRules
                 "KismetWidgets",
                 "MainFrame",
                 "PropertyEditor",
-                "ComponentVisualizers",
+                "ComponentVisualizers"
 
-				// ... add private dependencies that you statically link with here ...	
+                // ... add private dependencies that you statically link with here ...	
 			}
 			);
 		

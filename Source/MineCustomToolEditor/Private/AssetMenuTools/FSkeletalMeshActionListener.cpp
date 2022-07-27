@@ -249,10 +249,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         FName const CurMatSlotName = AllMats[CurSectionMatId].MaterialSlotName;
                         for (uint16 ClothDataId =0; ClothDataId< AllClothData.Num(); ++ClothDataId)
                         {
-                            // Log Me
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Section: %d; MatSlotName: %s; ClothDataName: %s"),
-                                SectionId, *CurMatSlotName.ToString(), *(AllClothData[ClothDataId]->GetFName ().ToString()));
-
                             // Check if matched material slot
                             if (AllClothData[ClothDataId]->GetFName () == CurMatSlotName)
                             {
