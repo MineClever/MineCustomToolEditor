@@ -135,10 +135,13 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                             // Find ABC Path
                             TArray<FString> AbcPathArray;
 
-                            // TODO: need a method found correct Package path
-                            FString PackagePath = MeshComponent->GetPathName ();
-                            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name finder Get Package path :\n %s ;\n"), *PackagePath);
-                            PackagePath = TEXT("/Game/PalTrailer/Characters/Nanzhu/Rig_Nanzhu.Rig_Nanzhu");
+                            // Package path for current component
+                            FString PackagePath;
+
+                            if (!GetCurrentMeshComponentPackagePath (WeakObject, PackagePath)) continue;;
+
+                            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get Package path :\n %s ;\n"), *PackagePath);
+
                             MakeRelativeAbcDirPath(PackagePath, AbcPathArray);
 
                             for (auto SlotName : SlotNames) {
@@ -168,6 +171,24 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                 }// End Traverse BindingsGuid
             } // End of If valid LevelSequence
         }; // End of Function
+
+        static bool GetCurrentMeshComponentPackagePath (TWeakObjectPtr<> WeakObject, FString &PackagePath)
+        {
+            bool bCastToMesh = false;
+            if (WeakObject->GetClass ()->GetFName () == UStaticMeshComponent::StaticClass ()->GetFName ()) {
+                auto const StaticMeshComponent = Cast<UStaticMeshComponent> (WeakObject.Get ());
+                UStaticMesh const *CurMesh = StaticMeshComponent->GetStaticMesh ();
+                PackagePath = CurMesh->GetPathName ();
+                bCastToMesh = true;
+            }
+            if (WeakObject->GetClass ()->GetFName () == USkeletalMeshComponent::StaticClass ()->GetFName ()) {
+                auto const SkeletalMeshComponent = Cast<USkeletalMeshComponent> (WeakObject.Get ());
+                auto const *CurMesh = SkeletalMeshComponent->SkeletalMesh;
+                PackagePath = CurMesh->GetPathName ();
+                bCastToMesh = true;
+            }
+            return bCastToMesh;
+        }
 
         static void CreateTrackForMeshElement (UMovieScene *MovieScene, const TSharedPtr<ISequencer> &SequencerEditor,
             const FGuid &ObjectBindingID, const int32 &MaterialIndex, const FName &SlotName)
