@@ -7,7 +7,7 @@
 #include "MovieScene.h"
 #include "Sections/MovieScenePrimitiveMaterialSection.h"
 #include "Tracks/MovieScenePrimitiveMaterialTrack.h"
-
+#include <AssetMenuTools/FSkeletalMeshActionListener.cpp>
 
 #define LOCTEXT_NAMESPACE "FMineSequencerBaseMenuAction"
 
@@ -133,12 +133,30 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                             TArray<FName> SlotNames = MeshComponent->GetMaterialSlotNames ();
 
+                            // Find ABC Path
+                            TArray<FString> AbcPathArray;
+                            FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath
+                            (MeshComponent->GetPathName(), AbcPathArray);
+
+                            auto HasFoundClothAbcFile = FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::HasFoundClothAbcFile;
+
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
-                                /* Check if Current SlotName contains "Daili" tag */
-                                // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Slot Name : %s ;\n"), *SlotName.ToString ());
-                                if (SlotName.ToString ().Find ("daili") > 0) HasProxyTag = true;
-                                /* If has "Daili" tag , add to indexArray */
+
+                                // TODO: Switch to PathFinder!
+                                FString MatchedPackagePath;
+                                for (auto AbcDirPath : AbcPathArray) {
+                                    // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                                    if (!FPaths::DirectoryExists (AbcDirPath)) continue;
+
+                                    
+                                    // Make sure SlotNamed Abc Package path is valid, Or Skip
+                                    if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath))
+                                        HasProxyTag = true;
+                                        break;
+                                }
+
+                                /* If has found Proxy , add to indexArray */
                                 if (HasProxyTag) {
                                     CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid, MeshComponent->GetMaterialIndex (SlotName), SlotName);
                                 }
