@@ -138,8 +138,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                             // TODO: need a method found correct Package path
                             FString PackagePath = MeshComponent->GetPathName ();
                             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name finder Get Package path :\n %s ;\n"), *PackagePath);
-                            // PackagePath = TEXT("/Game/PalTrailer/Characters/Nanzhu/Rig_Nanzhu.Rig_Nanzhu");
-
+                            PackagePath = TEXT("/Game/PalTrailer/Characters/Nanzhu/Rig_Nanzhu.Rig_Nanzhu");
                             MakeRelativeAbcDirPath(PackagePath, AbcPathArray);
 
                             for (auto SlotName : SlotNames) {
