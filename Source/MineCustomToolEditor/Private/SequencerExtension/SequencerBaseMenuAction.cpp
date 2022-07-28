@@ -134,13 +134,14 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                             // Find ABC Path
                             TArray<FString> AbcPathArray;
-                            // BUG: need a method found correct Package path
+
+                            // TODO: need a method found correct Package path
+                            
                             MakeRelativeAbcDirPath("/Game/PalTrailer/Characters/Nanzhu/Rig_Nanzhu.Rig_Nanzhu", AbcPathArray);
 
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
 
-                                // TODO: Switch to PathFinder!
                                 FString MatchedPackagePath;
                                 for (auto AbcDirPath : AbcPathArray) {
                                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
