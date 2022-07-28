@@ -7,7 +7,6 @@
 #include "MovieScene.h"
 #include "Sections/MovieScenePrimitiveMaterialSection.h"
 #include "Tracks/MovieScenePrimitiveMaterialTrack.h"
-#include <AssetMenuTools/FSkeletalMeshActionListener.cpp>
 
 #define LOCTEXT_NAMESPACE "FMineSequencerBaseMenuAction"
 
@@ -135,10 +134,8 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                             // Find ABC Path
                             TArray<FString> AbcPathArray;
-                            FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath
-                            (MeshComponent->GetPathName(), AbcPathArray);
+                            MakeRelativeAbcDirPath(MeshComponent->GetPathName(), AbcPathArray);
 
-                            auto HasFoundClothAbcFile = FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::HasFoundClothAbcFile;
 
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
@@ -146,10 +143,11 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                                 // TODO: Switch to PathFinder!
                                 FString MatchedPackagePath;
                                 for (auto AbcDirPath : AbcPathArray) {
-                                    // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                                    if (AbcDirPath.Find(LevelSequence->GetName ()) < 1) continue;
+
                                     if (!FPaths::DirectoryExists (AbcDirPath)) continue;
 
-                                    
                                     // Make sure SlotNamed Abc Package path is valid, Or Skip
                                     if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath))
                                         HasProxyTag = true;
@@ -193,6 +191,49 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             SequencerEditor->NotifyMovieSceneDataChanged (EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
         }
 
+        static void MakeRelativeAbcDirPath (const FString &MatPackagePath, TArray<FString> &AbcPathArray)
+        {
+            class FDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
+            {
+            protected:
+                virtual bool Visit (const TCHAR *FilenameOrDirectory, bool bIsDirectory) override
+                {
+                    if (bIsDirectory) {
+                        FString TempPath;
+                        // FPackageName::TryConvertFilenameToLongPackageName (FString (FilenameOrDirectory), TempPath);
+                        DirectoryArray.AddUnique (FString (FilenameOrDirectory));
+                    }
+                    return true;
+                }
+            public:
+                TArray<FString> DirectoryArray;
+            };
+
+            AbcPathArray.Empty ();
+            // Path @ [CurrentAssetDir]/Animations/Alembic
+            FString TempDirPath;
+            FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
+            TempDirPath = FPaths::GetPath (TempDirPath) / TEXT ("Animations/Alembic");
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to found all Alembic Diectory @ %s"), *TempDirPath);
+            if (FPaths::DirectoryExists (TempDirPath)) {
+                FDirectoryVisitor Visitor;
+                FPlatformFileManager::Get ().GetPlatformFile ().IterateDirectory (*TempDirPath, Visitor);
+                AbcPathArray = Visitor.DirectoryArray;
+            }
+        }
+
+        static bool HasFoundClothAbcFile (const FName &MatSlotName, const FString &AbcDirPath, FString &MatchedPackagePath)
+        {
+
+            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
+            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
+            // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
+            if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
+                return true;
+            }
+
+            return false;
+        }
 
         static bool LoadHiddenProxyMat (UObject *&ProxyMaterial)
         {
