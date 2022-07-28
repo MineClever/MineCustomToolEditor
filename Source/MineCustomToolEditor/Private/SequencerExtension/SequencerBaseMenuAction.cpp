@@ -5,6 +5,7 @@
 #include "ISequencer.h"
 #include "ILevelSequenceEditorToolkit.h"
 #include "MovieScene.h"
+#include "Sections/MovieScenePrimitiveMaterialSection.h"
 #include "Tracks/MovieScenePrimitiveMaterialTrack.h"
 
 
@@ -131,24 +132,16 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                         if (MeshComponent) {
 
                             TArray<FName> SlotNames = MeshComponent->GetMaterialSlotNames ();
-                            /* Store MatIndex to set Proxy Mat */
-                            TArray<int32> MatIndexToProxyArray;
 
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
                                 /* Check if Current SlotName contains "Daili" tag */
+                                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Slot Name : %s ;\n"), *SlotName.ToString ());
                                 if (SlotName.ToString ().Find ("daili") > 0) HasProxyTag = true;
                                 /* If has "Daili" tag , add to indexArray */
                                 if (HasProxyTag) {
-                                    MatIndexToProxyArray.AddUnique (MeshComponent->GetMaterialIndex (SlotName));
+                                    CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid, MeshComponent->GetMaterialIndex (SlotName), SlotName);
                                 }
-                            }
-
-                            if (MatIndexToProxyArray.Num () < 1) continue;
-
-                            for (int32 const MatIndex : MatIndexToProxyArray) {
-                                // Create Tracks!
-                                CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid, MatIndex);
                             }
                         }
                     } // End Traverse Objects of current guid binding
@@ -158,7 +151,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
         }; // End of Function
 
         static void CreateTrackForMeshElement (UMovieScene *MovieScene, const TSharedPtr<ISequencer> &SequencerEditor,
-            const FGuid &ObjectBindingID, const int32 &MaterialIndex)
+            const FGuid &ObjectBindingID, const int32 &MaterialIndex, const FName &SlotName)
         {
             // FScopedTransaction Transaction (LOCTEXT ("CreateTrack", "Create Material Track"));
             MovieScene->Modify ();
@@ -166,15 +159,45 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             UMovieScenePrimitiveMaterialTrack *NewTrack =
                 MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack> (ObjectBindingID);
             NewTrack->MaterialIndex = MaterialIndex;
-            NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "ClothProxyMatSlot_{0}"),
-                FText::AsNumber (MaterialIndex)));
-            UMovieSceneSection *&&NewMaterialSection = NewTrack->CreateNewSection ();
-            // TODO: Make New section with Proxy Material! 
+            NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "Proxy_{0}"),FText::FromName(SlotName))
+            );
+            
+            UMovieSceneSection *MovieSceneSection = NewTrack->CreateNewSection ();
 
-            NewTrack->AddSection (*NewMaterialSection);
+            // TODO: Make New section with Proxy Material!
+            UObject *MaterialObject;
+            LoadHiddenProxyMat (MaterialObject);
+            auto const MaterialSection = Cast<UMovieScenePrimitiveMaterialSection> (MovieSceneSection);
+            MaterialSection->MaterialChannel.SetDefault(MaterialObject);
+
+            NewTrack->AddSection (*MaterialSection);
 
             SequencerEditor->NotifyMovieSceneDataChanged (EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
         }
+
+
+        static bool LoadHiddenProxyMat (UObject *&ProxyMaterial)
+        {
+            /* Path to Proxy material */
+            static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
+            static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
+
+            /* Load Mat to Object */
+            ProxyMaterial = MinePackageLoadHelper::LoadAsset (ProxyMatPath);
+
+            if (!IsValid (ProxyMaterial)) {
+                /* Load WorldDefault Material to replace */
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to Load Default World Material;\n"));
+                ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
+                if (!IsValid (ProxyMaterial)) {
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Cant Load Default World Material !!!;\n"));
+                    ProxyMaterial = nullptr;
+                    return false;
+                }
+            }
+            return true;
+        }
+
     }; // End Of Class
 
 }
