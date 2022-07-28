@@ -94,39 +94,29 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
             // Find Sequence
             TSharedPtr<ISequencer> SequencerEditor;
-            ULevelSequence* const LevelSequence = FSequencerHelperFunctions::GetFocusSequence(SequencerEditor);
+            ULevelSequence *const LevelSequence = FSequencerHelperFunctions::GetFocusSequence (SequencerEditor);
 
-            if (LevelSequence!=nullptr)
-            {
+            if (LevelSequence != nullptr) {
                 // Tool
                 TArray<FGuid> BindingsGuid;
                 SequencerEditor->GetSelectedObjects (BindingsGuid);
-                UMovieScene* MovieScene = LevelSequence->GetMovieScene();
-
-
-				auto GetMaterialIndexForTrack = [](UMovieSceneTrack *InTrack)
-				{
-					UMovieScenePrimitiveMaterialTrack *MaterialTrack = Cast<UMovieScenePrimitiveMaterialTrack>(InTrack);
-					return MaterialTrack ? MaterialTrack->MaterialIndex : INDEX_NONE;
-				};
+                UMovieScene *MovieScene = LevelSequence->GetMovieScene ();
 
                 // Find Binding in Current Sequence
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Sequence is %s;\n"), *LevelSequence->GetName ());
                 for (FGuid Guid : BindingsGuid) {
-                    FMovieSceneBinding* const Binding = MovieScene->FindBinding(Guid);
-                    if (Binding==nullptr) continue;
+                    FMovieSceneBinding *const Binding = MovieScene->FindBinding (Guid);
+                    if (Binding == nullptr) continue;
                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Sequence Object %s Has been selected in Sequencer Editor;\n"), *Binding->GetName ());
 
                     // Make a track to add material switcher
 
                     /* Check if already valid material switch track here */
 
-                    TArray<UMovieSceneTrack*> CurBindingTracks = Binding->GetTracks();
-                    for(UMovieSceneTrack* const Track : CurBindingTracks)
-                    {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Info :%s, %s;\n"), *Track->GetDisplayName().ToString(), *Track->GetClass ()->GetName ());
-                        if (Track->GetClass ()->GetFName () == UMovieScenePrimitiveMaterialTrack::StaticClass()->GetFName())
-                        {
+                    TArray<UMovieSceneTrack *> CurBindingTracks = Binding->GetTracks ();
+                    for (UMovieSceneTrack *const Track : CurBindingTracks) {
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Info :%s, %s;\n"), *Track->GetDisplayName ().ToString (), *Track->GetClass ()->GetName ());
+                        if (Track->GetClass ()->GetFName () == UMovieScenePrimitiveMaterialTrack::StaticClass ()->GetFName ()) {
                             UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Track %s is MaterialTrack;\n"), *Track->GetDisplayName ().ToString ());
                         }
                     }
@@ -134,35 +124,58 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                     /* Add new Material Switcher Track */
                     // Ref to \Engine\Source\Editor\MovieSceneTools\Private\TrackEditors\PrimitiveMaterialTrackEditor.cpp
 
-					int32 MinNumMaterials = TNumericLimits<int32>::Max();
-					for (TWeakObjectPtr<> WeakObject :SequencerEditor->FindObjectsInCurrentSequence(Guid))
-					{
-						UPrimitiveComponent *PrimitiveComponent = Cast<UPrimitiveComponent>(WeakObject.Get());
-						if (PrimitiveComponent)
-						{
-							MinNumMaterials = FMath::Min(MinNumMaterials, PrimitiveComponent->GetNumMaterials());
-						}
-					}
 
-                    if (MinNumMaterials > 0 && MinNumMaterials < TNumericLimits<int32>::Max())
-					{
-						for (int32 Index = 0; Index < MinNumMaterials; ++Index)
-						{
-                            // Create Material Track, if not in current tracks
-							const bool bAlreadyExists = Algo::FindBy(CurBindingTracks, Index, GetMaterialIndexForTrack) != nullptr;
-							if (!bAlreadyExists)
-							{
-								
-							}
-						}
-					}
+                    /* One Object Binding may get several Object Components */
+                    for (TWeakObjectPtr<> WeakObject : SequencerEditor->FindObjectsInCurrentSequence (Guid)) {
+                        UMeshComponent *MeshComponent = Cast<UMeshComponent> (WeakObject.Get ());
+                        if (MeshComponent) {
 
+                            TArray<FName> SlotNames = MeshComponent->GetMaterialSlotNames ();
+                            /* Store MatIndex to set Proxy Mat */
+                            TArray<int32> MatIndexToProxyArray;
 
-                }
+                            for (auto SlotName : SlotNames) {
+                                bool &&HasProxyTag = false;
+                                /* Check if Current SlotName contains "Daili" tag */
+                                if (SlotName.ToString ().Find ("daili") > 0) HasProxyTag = true;
+                                /* If has "Daili" tag , add to indexArray */
+                                if (HasProxyTag) {
+                                    MatIndexToProxyArray.AddUnique (MeshComponent->GetMaterialIndex (SlotName));
+                                }
+                            }
 
-            }
+                            if (MatIndexToProxyArray.Num () < 1) continue;
+
+                            for (int32 const MatIndex : MatIndexToProxyArray) {
+                                // Create Tracks!
+                                CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid, MatIndex);
+                            }
+                        }
+                    } // End Traverse Objects of current guid binding
+
+                }// End Traverse BindingsGuid
+            } // End of If valid LevelSequence
+        }; // End of Function
+
+        static void CreateTrackForMeshElement (UMovieScene *MovieScene, const TSharedPtr<ISequencer> &SequencerEditor,
+            const FGuid &ObjectBindingID, const int32 &MaterialIndex)
+        {
+            // FScopedTransaction Transaction (LOCTEXT ("CreateTrack", "Create Material Track"));
+            MovieScene->Modify ();
+
+            UMovieScenePrimitiveMaterialTrack *NewTrack =
+                MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack> (ObjectBindingID);
+            NewTrack->MaterialIndex = MaterialIndex;
+            NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "ClothProxyMatSlot_{0}"),
+                FText::AsNumber (MaterialIndex)));
+            UMovieSceneSection *&&NewMaterialSection = NewTrack->CreateNewSection ();
+            // TODO: Make New section with Proxy Material! 
+
+            NewTrack->AddSection (*NewMaterialSection);
+
+            SequencerEditor->NotifyMovieSceneDataChanged (EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
         }
-    };
+    }; // End Of Class
 
 }
 
@@ -194,23 +207,6 @@ namespace FMineSequencerBaseMenuAction_Internal
             return true;
         }
 
-		static void CreateTrackForMeshElement(UMovieScene *MovieScene, TSharedPtr<ISequencer> SequencerEditor,
-										  FGuid ObjectBindingID, int32 MaterialIndex)
-		{
-			FScopedTransaction Transaction(LOCTEXT("CreateTrack", "Create Material Track"));
-			MovieScene->Modify();
-
-			UMovieScenePrimitiveMaterialTrack *NewTrack =
-				MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack>(ObjectBindingID);
-			NewTrack->MaterialIndex = MaterialIndex;
-			NewTrack->SetDisplayName(FText::Format(LOCTEXT("MaterialTrackName_Format", "ClothProxyMatSlot_{0}"),
-												   FText::AsNumber(MaterialIndex)));
-			UMovieSceneSection* &&NewMaterialSection = NewTrack->CreateNewSection();
-
-			NewTrack->AddSection(*NewMaterialSection);
-
-			SequencerEditor->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
-		}
     };
 
 
@@ -343,7 +339,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             TSharedPtr<FExtender> MenuExtender = MakeShareable (new FExtender ());
             MenuExtender->AddMenuExtension (
                 TEXT ("Edit"),
-                EExtensionHook::After,
+                EExtensionHook::Before,
                 CommandList,
                 FMenuExtensionDelegate::CreateStatic (&FMineSequenceBaseCtxMenuActionExtension::CreateActionsSubMenu)
             );
