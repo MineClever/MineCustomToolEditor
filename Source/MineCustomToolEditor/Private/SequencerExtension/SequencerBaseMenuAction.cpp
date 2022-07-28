@@ -136,7 +136,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
                                 /* Check if Current SlotName contains "Daili" tag */
-                                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Slot Name : %s ;\n"), *SlotName.ToString ());
+                                // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Slot Name : %s ;\n"), *SlotName.ToString ());
                                 if (SlotName.ToString ().Find ("daili") > 0) HasProxyTag = true;
                                 /* If has "Daili" tag , add to indexArray */
                                 if (HasProxyTag) {
