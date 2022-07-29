@@ -91,6 +91,25 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             FString const TempDebugString = TEXT ("Do Test to Sequencer!");
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempDebugString);
             GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *TempDebugString);
+        }; // End of Function
+
+
+    }; // End Of Class
+
+}
+
+// Asset Processor Class
+namespace FMineSequencerBaseMenuAction_Internal
+{
+    using namespace FMineSequencerBaseMenuAction_Helper_Internal;
+    class FMineSequencerAction_SetHiddenProxyMatKey
+    {
+    public:
+        static void DoProcess ()
+        {
+            FString const TempDebugString = TEXT ("Do Test to Sequencer!");
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempDebugString);
+            GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *TempDebugString);
 
             // Find Sequence
             TSharedPtr<ISequencer> SequencerEditor;
@@ -145,7 +164,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get Package path :\n %s ;\n"), *PackagePath);
 
-                            MakeRelativeAbcDirPath(PackagePath, AbcPathArray);
+                            MakeRelativeAbcDirPath (PackagePath, AbcPathArray);
 
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
@@ -153,14 +172,14 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                                 FString MatchedPackagePath;
                                 for (auto AbcDirPath : AbcPathArray) {
                                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
-                                    if (AbcDirPath.Find(LevelSequence->GetName ()) < 1) continue;
+                                    if (AbcDirPath.Find (LevelSequence->GetName ()) < 1) continue;
 
                                     if (!FPaths::DirectoryExists (AbcDirPath)) continue;
 
                                     // Make sure SlotNamed Abc Package path is valid, Or Skip
                                     if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath))
                                         HasProxyTag = true;
-                                        break;
+                                    break;
                                 }
 
                                 /* If has found Proxy , add to indexArray */
@@ -203,13 +222,13 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             UMovieScenePrimitiveMaterialTrack *NewTrack =
                 MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack> (ObjectBindingID);
             NewTrack->MaterialIndex = MaterialIndex;
-            NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "Proxy_{0}"),FText::FromName(SlotName))
+            NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "Proxy_{0}"), FText::FromName (SlotName))
             );
-            
+
             UMovieSceneSection *MovieSceneSection = NewTrack->CreateNewSection ();
 
             auto const MaterialSection = Cast<UMovieScenePrimitiveMaterialSection> (MovieSceneSection);
-            MaterialSection->MaterialChannel.SetDefault(MaterialObject);
+            MaterialSection->MaterialChannel.SetDefault (MaterialObject);
 
             NewTrack->AddSection (*MaterialSection);
 
@@ -281,41 +300,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             }
             return true;
         }
-
-    }; // End Of Class
-
-}
-
-// Asset Processor Class
-namespace FMineSequencerBaseMenuAction_Internal
-{
-    class FMineSequencerAction_SetHiddenProxyMatKey
-    {
-    public:
-        static bool LoadHiddenProxyMat (UObject * &ProxyMaterial)
-        {
-            /* Path to Proxy material */
-            static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
-            static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
-
-            /* Load Mat to Object */
-            ProxyMaterial = MinePackageLoadHelper::LoadAsset (ProxyMatPath);
-
-            if (!IsValid (ProxyMaterial)) {
-                /* Load WorldDefault Material to replace */
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to Load Default World Material;\n"));
-                ProxyMaterial = MinePackageLoadHelper::LoadAsset (DefaultWorldMatPath);
-                if (!IsValid (ProxyMaterial)) {
-                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Cant Load Default World Material !!!;\n"));
-                    ProxyMaterial = nullptr;
-                    return false;
-                }
-            }
-            return true;
-        }
-
     };
-
 
 }
 
@@ -378,7 +363,7 @@ namespace FMineSequencerBaseMenuAction_Internal
 
             for (int i=0;i < BaseMenuAction_CommandInfo.UICommandInfoArray.Num();++i)
             {
-                BIND_UI_COMMAND_TO_SLOT (i, FTestAction::RunTest);
+                BIND_UI_COMMAND_TO_SLOT (i, FMineSequencerAction_SetHiddenProxyMatKey::DoProcess);
             }
 
             #undef BIND_UI_COMMAND_TO_SLOT
@@ -427,7 +412,6 @@ namespace FMineSequencerBaseMenuAction_Internal
             BarBuilder.EndSection ();
             BarBuilder.AddSeparator ();
         }
-
     };
 
     // Context Extension
