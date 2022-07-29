@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "1.2",
 	"FriendlyName": "MineCustomToolEditor",
 	"Description": "Load Tool Menus for Editor",
 	"Category": "MineClever",
@@ -27,6 +27,10 @@
 	"Plugins": [
 		{
 			"Name": "GeometryCache",
+			"Enabled": true
+		},
+		{
+			"Name": "LevelSequenceEditor",
 			"Enabled": true
 		}
 	]

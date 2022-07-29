@@ -102,6 +102,10 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
                 SequencerEditor->GetSelectedObjects (BindingsGuid);
                 UMovieScene *MovieScene = LevelSequence->GetMovieScene ();
 
+                // Make New section with Proxy Material!
+                UObject *MaterialObject;
+                LoadHiddenProxyMat (MaterialObject);
+
                 // Find Binding in Current Sequence
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Sequence is %s;\n"), *LevelSequence->GetName ());
                 for (FGuid Guid : BindingsGuid) {
@@ -123,7 +127,6 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                     /* Add new Material Switcher Track */
                     // Ref to \Engine\Source\Editor\MovieSceneTools\Private\TrackEditors\PrimitiveMaterialTrackEditor.cpp
-
 
                     /* One Object Binding may get several Object Components */
                     for (TWeakObjectPtr<> WeakObject : SequencerEditor->FindObjectsInCurrentSequence (Guid)) {
@@ -162,7 +165,8 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
                                 /* If has found Proxy , add to indexArray */
                                 if (HasProxyTag) {
-                                    CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid, MeshComponent->GetMaterialIndex (SlotName), SlotName);
+                                    CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid,
+                                        MeshComponent->GetMaterialIndex (SlotName), SlotName, MaterialObject);
                                 }
                             }
                         }
@@ -191,7 +195,7 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
         }
 
         static void CreateTrackForMeshElement (UMovieScene *MovieScene, const TSharedPtr<ISequencer> &SequencerEditor,
-            const FGuid &ObjectBindingID, const int32 &MaterialIndex, const FName &SlotName)
+            const FGuid &ObjectBindingID, const int32 &MaterialIndex, const FName &SlotName, UObject *MaterialObject)
         {
             // FScopedTransaction Transaction (LOCTEXT ("CreateTrack", "Create Material Track"));
             MovieScene->Modify ();
@@ -204,9 +208,6 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
             
             UMovieSceneSection *MovieSceneSection = NewTrack->CreateNewSection ();
 
-            // TODO: Make New section with Proxy Material!
-            UObject *MaterialObject;
-            LoadHiddenProxyMat (MaterialObject);
             auto const MaterialSection = Cast<UMovieScenePrimitiveMaterialSection> (MovieSceneSection);
             MaterialSection->MaterialChannel.SetDefault(MaterialObject);
 
