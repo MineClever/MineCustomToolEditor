@@ -166,6 +166,7 @@ namespace FMineSequencerBaseMenuAction_Internal
 
                             MakeRelativeAbcDirPath (PackagePath, AbcPathArray);
 
+                            bool bFoundAbcPath = false;
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
 
@@ -178,8 +179,11 @@ namespace FMineSequencerBaseMenuAction_Internal
 
                                     // Make sure SlotNamed Abc Package path is valid, Or Skip
                                     if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath))
+                                    {
                                         HasProxyTag = true;
-                                    break;
+                                        bFoundAbcPath = bFoundAbcPath | true;
+                                        break;
+                                    }
                                 }
 
                                 /* If has found Proxy , add to indexArray */
@@ -187,6 +191,15 @@ namespace FMineSequencerBaseMenuAction_Internal
                                     CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid,
                                         MeshComponent->GetMaterialIndex (SlotName), SlotName, MaterialObject);
                                 }
+                            }
+
+                            if (!bFoundAbcPath)
+                            {
+                                FText &&Message = FText::Format (
+                                    FText::FromString("Can not find any matched Alembic directory path for\n{0}\n"),
+                                    FText::FromString(PackagePath));
+
+                                FMessageDialog::Open (EAppMsgType::Ok, Message);
                             }
                         }
                     } // End Traverse Objects of current guid binding
@@ -300,6 +313,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             }
             return true;
         }
+
     };
 
 }
