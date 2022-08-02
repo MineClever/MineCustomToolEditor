@@ -270,7 +270,11 @@ namespace FMineSequencerBaseMenuAction_Internal
             // Path @ [CurrentAssetDir]/Animations/Alembic
             FString TempDirPath;
             FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
-            TempDirPath = FPaths::GetPath (TempDirPath) / TEXT ("Animations/Alembic");
+
+            // TODO: Read from config file
+            FString const ConfigAlembicPathRule = TEXT ("Animations/Alembic");
+
+            TempDirPath = FPaths::GetPath (TempDirPath) / ConfigAlembicPathRule;
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to found all Alembic Diectory @ %s"), *TempDirPath);
             if (FPaths::DirectoryExists (TempDirPath)) {
                 FDirectoryVisitor Visitor;
@@ -281,8 +285,10 @@ namespace FMineSequencerBaseMenuAction_Internal
 
         static bool HasFoundClothAbcFile (const FName &MatSlotName, const FString &AbcDirPath, FString &MatchedPackagePath)
         {
+            // TODO: Read from config file
+            FString const ConfigSubPathRule = TEXT ("Cloth");
 
-            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
+            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / ConfigSubPathRule, MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
             // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
             if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
@@ -295,7 +301,10 @@ namespace FMineSequencerBaseMenuAction_Internal
         static bool LoadHiddenProxyMat (UObject *&ProxyMaterial)
         {
             /* Path to Proxy material */
+            // TODO: Read from Config
             static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
+
+            /* Fallback Proxy Material Engine Path */
             static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");
 
             /* Load Mat to Object */
@@ -375,10 +384,8 @@ namespace FMineSequencerBaseMenuAction_Internal
                     FExecuteAction::CreateStatic (&##FUNC##),FCanExecuteAction () \
                 );
 
-            for (int i=0;i < BaseMenuAction_CommandInfo.UICommandInfoArray.Num();++i)
-            {
-                BIND_UI_COMMAND_TO_SLOT (i, FMineSequencerAction_SetHiddenProxyMatKey::DoProcess);
-            }
+            // 0
+            BIND_UI_COMMAND_TO_SLOT (0, FMineSequencerAction_SetHiddenProxyMatKey::DoProcess);
 
             #undef BIND_UI_COMMAND_TO_SLOT
         }
@@ -419,6 +426,10 @@ namespace FMineSequencerBaseMenuAction_Internal
             auto BaseMenuAction_CommandInfo = TCmdInfo::Get ();
             UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s"), TEXT ("Debug: Create Sequencer Bar Button"));
             BarBuilder.BeginSection ("MineSequencerToolBar");
+            //for (int CommandId = 0; CommandId < BaseMenuAction_CommandInfo.UICommandInfoArray.Num (); ++CommandId)
+            //{
+            //    
+            //}
             BarBuilder.AddToolBarButton (BaseMenuAction_CommandInfo.UICommandInfoArray[0],
                 NAME_None, TAttribute<FText> (), TAttribute<FText> (),
                 FSlateIcon (FEditorStyle::GetStyleSetName (), "Matinee.ToggleCurveEditor")
