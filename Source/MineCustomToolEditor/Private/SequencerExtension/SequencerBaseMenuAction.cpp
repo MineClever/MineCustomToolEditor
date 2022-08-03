@@ -66,8 +66,8 @@ namespace FMineSequencerBaseMenuAction_Helper_Internal
 
             for (UObject *Asset : Assets) {
                 // Find Sequencer Editor by Asset
-                IAssetEditorInstance * &&AssetEditor = LEditorSubsystem->FindEditorForAsset (Asset, false);
-                ILevelSequenceEditorToolkit * &&LevelSequenceEditor = static_cast<ILevelSequenceEditorToolkit *>(AssetEditor);
+                IAssetEditorInstance * AssetEditor = LEditorSubsystem->FindEditorForAsset (Asset, false);
+                ILevelSequenceEditorToolkit * LevelSequenceEditor = static_cast<ILevelSequenceEditorToolkit *>(AssetEditor);
 
                 if (LevelSequenceEditor) {
                     // The LevelSequence Object
