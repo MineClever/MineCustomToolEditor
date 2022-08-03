@@ -5,6 +5,7 @@
 #include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetMenuTools/TMineContentBrowserExtensions_SelectedAssets_Base.h"
+#include "ConfigIO/ConfigIO.h"
 
 #define LOCTEXT_NAMESPACE "FTextureAssetActionListener"
 
@@ -133,37 +134,39 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             LTempStringArray.Empty ();
 
             /* Lambda Function to create FString Array */
-            static auto ArrayCreateFunc = [&](const TCHAR *InputText)
+            static auto ArrayCreateFunc = [&](const FString InputText)
             {
-                FString &&TempString = InputText;
-                TempString.ParseIntoArray (LTempStringArray, TEXT (","), true);
+                InputText.ParseIntoArray (LTempStringArray, TEXT (","), true);
             };
 
             while (true) {
+                auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+                bool const bCustom = ConfigSettings->bUseCustomTexFormatConfig;
+
                 if (RuleName == TEXT ("srgb")) 
                 {
-                    ArrayCreateFunc (TEXT ("srgb,fx,col,color,d,diffuse,diff,basecolor"));
+                    ArrayCreateFunc (bCustom? ConfigSettings->ConfigTexSrgbTags : TEXT ("srgb,fx,col,color,d,diffuse,diff,basecolor"));
                     break;
                 } 
                 if (RuleName == TEXT ("normal"))
                 {
-                    ArrayCreateFunc (TEXT ("normal,norm,nor,faxian,n"));
+                    ArrayCreateFunc (bCustom ? ConfigSettings->ConfigTexNormalTags : TEXT ("normal,norm,nor,faxian,n"));
                     break;
                 }
                 if (RuleName == TEXT ("grey")) {
-                    ArrayCreateFunc (TEXT ("op,o,grey,opacity,alpha"));
+                    ArrayCreateFunc (bCustom ? ConfigSettings->ConfigTexSingleChannelTags : TEXT ("op,o,grey,opacity,alpha"));
                     break;
                 }
                 if (RuleName == TEXT ("mask")) {
-                    ArrayCreateFunc (TEXT ("silk,arm"));
+                    ArrayCreateFunc (bCustom ? ConfigSettings->ConfigTexMaskChannelsTags : TEXT ("silk,arm"));
                     break;
                 }
                 if (RuleName == TEXT ("forcelinear")) {
-                    ArrayCreateFunc (TEXT ("linear,arm,amibient,metalness,roughness,opacity,op"));
+                    ArrayCreateFunc (bCustom ? ConfigSettings->ConfigTexMaskChannelsTags : TEXT ("linear,arm,amibient,metalness,roughness,opacity,op"));
                     break;
                 }
                 if (RuleName == TEXT ("floating")) {
-                    ArrayCreateFunc (TEXT ("hdr,hdri,floating"));
+                    ArrayCreateFunc (bCustom ? ConfigSettings->ConfigTexHdrTags : TEXT ("hdr,hdri,floating"));
                     break;
                 }
                 break;
