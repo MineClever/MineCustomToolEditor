@@ -47,6 +47,15 @@ public:
 
     UPROPERTY (EditAnywhere, config, Category = "MineTextureFormat")
     FString ConfigTexHdrTags = TEXT ("hdr,hdri,floating");
+
+    // All StaticMesh Asset Configures
+    ///////////////////////////////////////////////
+
+    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    bool bUseCustomStaticMeshProcessorConfig = false;
+
+    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    float ConfigDistanceFiledResolutionScale = 24;
 };
 
 

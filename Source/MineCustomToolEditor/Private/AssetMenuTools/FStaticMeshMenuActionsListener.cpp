@@ -1,6 +1,7 @@
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
+#include "ConfigIO/ConfigIO.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,8 +92,9 @@ public:
 
 		// Unreal AssetSubSystem
 	    UAssetEditorSubsystem * const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
-
-        float const NewDFResolutionScale = 24;
+		auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+		bool const bCustom = ConfigSettings->bUseCustomStaticMeshProcessorConfig;
+        float const NewDFResolutionScale = bCustom? ConfigSettings->ConfigDistanceFiledResolutionScale : 24;
 
         for (auto const Asset : Assets)
 		{
