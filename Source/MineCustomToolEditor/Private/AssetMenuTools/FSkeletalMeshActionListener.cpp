@@ -9,6 +9,7 @@
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "GeometryCache.h"
+#include "ConfigIO/ConfigIO.h"
 
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
 
@@ -182,8 +183,11 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
          */
         static bool HasFoundClothAbcFile (const FName & MatSlotName,const FString & AbcDirPath, FString & MatchedPackagePath)
         {
-
-            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / TEXT ("Cloth"), MatSlotName.ToString ());
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            FString const ConfigSubPathRule =
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicSubDirMatchKey : TEXT ("Cloth");
+            MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / ConfigSubPathRule, MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
             // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
             if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
@@ -196,10 +200,16 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
         static void MakeRelativeAbcDirPath (const FString & MatPackagePath, TArray<FString> &AbcPathArray)
         {
             AbcPathArray.Empty ();
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            FString const ConfigAlembicPathRule =
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicPathRule :
+                TEXT ("Animations/Alembic");
+
             // Path @ [CurrentAssetDir]/Animations/Alembic
             FString TempDirPath;
             FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
-            TempDirPath = FPaths::GetPath (TempDirPath) / TEXT ("Animations/Alembic");
+            TempDirPath = FPaths::GetPath (TempDirPath) / ConfigAlembicPathRule;
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to found all Alembic Diectory @ %s"),*TempDirPath);
             if (FPaths::DirectoryExists(TempDirPath))
             {
