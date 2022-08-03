@@ -17,8 +17,8 @@ public class MineCustomToolEditor : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(ModuleDirectory,"../ThirdPart/stb"),
                 Path.Combine(ModuleDirectory,"../Plugins/Experimental/GeometryCache"),
+				Path.Combine(ModuleDirectory,"../ThirdPart/stb"),
                 // ... add public include paths required here ...
 			}
 			);

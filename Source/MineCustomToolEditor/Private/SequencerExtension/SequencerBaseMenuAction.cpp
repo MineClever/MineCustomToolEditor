@@ -5,6 +5,7 @@
 #include "ISequencer.h"
 #include "ILevelSequenceEditorToolkit.h"
 #include "MovieScene.h"
+#include "ConfigIO/ConfigIO.h"
 #include "Sections/MovieScenePrimitiveMaterialSection.h"
 #include "Tracks/MovieScenePrimitiveMaterialTrack.h"
 
@@ -104,9 +105,16 @@ namespace FMineSequencerBaseMenuAction_Internal
     using namespace FMineSequencerBaseMenuAction_Helper_Internal;
     class FMineSequencerAction_SetHiddenProxyMatKey
     {
+
     public:
+        static const UMineEditorConfigSettings * LoadConfig ()
+        {
+            return GetDefault<UMineEditorConfigSettings> ();
+        }
+
         static void DoProcess ()
         {
+
             FString const TempDebugString = TEXT ("Do Test to Sequencer!");
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s"), *TempDebugString);
             GEngine->AddOnScreenDebugMessage (-1, 5.f, FColor::Blue, *TempDebugString);
@@ -137,7 +145,7 @@ namespace FMineSequencerBaseMenuAction_Internal
                     /* Check if already valid material switch track here */
 
                     TArray<UMovieSceneTrack *> CurBindingTracks = Binding->GetTracks ();
-                    for (UMovieSceneTrack *const Track : CurBindingTracks) {
+                    for (UMovieSceneTrack const*const Track : CurBindingTracks) {
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Current Track Info :%s, %s;\n"), *Track->GetDisplayName ().ToString (), *Track->GetClass ()->GetName ());
                         if (Track->GetClass ()->GetFName () == UMovieScenePrimitiveMaterialTrack::StaticClass ()->GetFName ()) {
                             UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Track %s is MaterialTrack;\n"), *Track->GetDisplayName ().ToString ());
@@ -272,7 +280,11 @@ namespace FMineSequencerBaseMenuAction_Internal
             FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
 
             // TODO: Read from config file
-            FString const ConfigAlembicPathRule = TEXT ("Animations/Alembic");
+            auto const ConfigSettings = LoadConfig ();
+            FString const ConfigAlembicPathRule = 
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicPathRule :
+                TEXT ("Animations/Alembic");
 
             TempDirPath = FPaths::GetPath (TempDirPath) / ConfigAlembicPathRule;
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to found all Alembic Diectory @ %s"), *TempDirPath);
@@ -286,7 +298,10 @@ namespace FMineSequencerBaseMenuAction_Internal
         static bool HasFoundClothAbcFile (const FName &MatSlotName, const FString &AbcDirPath, FString &MatchedPackagePath)
         {
             // TODO: Read from config file
-            FString const ConfigSubPathRule = TEXT ("Cloth");
+            auto const ConfigSettings = LoadConfig ();
+            FString const ConfigSubPathRule = 
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicSubDirMatchKey : TEXT ("Cloth");
 
             MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / ConfigSubPathRule, MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
@@ -302,7 +317,12 @@ namespace FMineSequencerBaseMenuAction_Internal
         {
             /* Path to Proxy material */
             // TODO: Read from Config
-            static FString const ProxyMatPath = TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
+            auto const ConfigSettings = LoadConfig ();
+
+            static FString const ProxyMatPath = 
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicProxyMatPath :
+                TEXT ("/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");
 
             /* Fallback Proxy Material Engine Path */
             static FString const DefaultWorldMatPath = TEXT ("/Engine/EngineMaterials/WorldGridMaterial");

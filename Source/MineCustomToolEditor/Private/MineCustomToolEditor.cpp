@@ -1,6 +1,7 @@
 ﻿#include "MineCustomToolEditor.h"
 #include "MenuTools/MenuTool.h"
 #include "TabTools/TabTool.h"
+#include "ConfigIO/ConfigIO.h"
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "LayerMenuTools/FLayerSelectionTool.hpp"
 #include "AssetMenuTools/FCommonAssetActionsListener.h"
@@ -19,6 +20,9 @@ DEFINE_LOG_CATEGORY (LogMineCustomToolEditor);
 
 void FMineToolEditor::AddModuleListeners ()
 {
+    // Add Config Loader
+    ModuleListeners.Emplace (MakeShareable (new FMineToolConfigLoader));
+
     // Add Layer Menu Extender
     ModuleListeners.Emplace (MakeShareable (new FLayerToolsListener));
     // Add Custom Command
