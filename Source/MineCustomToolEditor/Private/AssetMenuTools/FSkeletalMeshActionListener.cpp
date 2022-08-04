@@ -220,6 +220,102 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
         }
     }; // End Of Class
 
+    class FSkeletalMeshProcessor_AutoBindMaterials: public TAssetsProcessorFormSelection_Builder<LocAssetType>
+    {
+
+    public:
+
+        virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
+        {
+
+            TArray<UObject *> ObjectToSave;
+
+            for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
+
+                // Start job!
+                auto const SkMesh = *SkIt;
+
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
+
+                // Generate abc dir path
+                TArray<FString> MatDirPathArray;
+                MakeRelativeMatDirPath (SkMesh->GetPathName (), MatDirPathArray);
+
+                // Found Materials
+                TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
+
+                // Find Mat by MatIndex
+                FString MatchedPackagePath;
+
+                for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+                    FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+
+                    // traverse all valid path to find same named material
+                    for (FString MatDirPath: MatDirPathArray)
+                    {
+                        if (!HasFoundSlotNameMat(CurMatSlotName, MatDirPath, MatchedPackagePath)) continue;
+
+                        // Load Material to set
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
+                        UObject *const MatAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+                        if (!IsValid (MatAsset)) continue;
+
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Type as @ %s"), *MatAsset->GetClass()->GetName());
+                        // Cast to material type && Set new Material Interface
+                        // AllMats[MatId].MaterialInterface = ;
+
+                    }
+                } // End Of Iterator of MatIds
+
+                //SkMesh->SetMaterials (AllMats);
+                //ObjectToSave.Emplace (SkMesh);
+
+            } // End of Iterator Of Assets
+            UPackageTools::SavePackagesForObjects (ObjectToSave);
+        } // End Of ProcessAssets
+
+
+        static void MakeRelativeMatDirPath (const FString &MatPackagePath, TArray<FString> &ValidPathArray)
+        {
+            ValidPathArray.Empty ();
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            FString const ConfigMatPathRule =
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicPathRule :
+                TEXT ("material,mat,materials");
+
+            // Convert into array
+            TArray<FString> MaterialsRuleDirArray;
+            ConfigMatPathRule.ParseIntoArray (MaterialsRuleDirArray, *ConfigMatPathRule);
+
+            for (auto MaterialRuleDir : MaterialsRuleDirArray)
+            {
+                FString TempDirPath;
+                FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
+                TempDirPath = FPaths::GetPath (TempDirPath) / MaterialRuleDir;
+
+                if (FPaths::DirectoryExists (TempDirPath)) {
+                    ValidPathArray.AddUnique(TempDirPath);
+                }
+            }
+
+        }
+
+        static bool HasFoundSlotNameMat (const FName &MatSlotName, const FString &MatDirPath, FString &MatchedPackagePath)
+        {
+
+            MatchedPackagePath = FPaths::ConvertRelativePathToFull (MatDirPath, MatSlotName.ToString ());
+            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
+            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find Material @ %s"), *MatchedPackagePath);
+            if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
+                return true;
+            }
+            return false;
+        }
+
+    }; // End Of Class
+
+
     class FSkeletalMeshProcessor_AutoBindClothData : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {
         virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
@@ -323,6 +419,12 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
                 "Set Cloth to MatSlot",
                 "Auto set existed Cloth-Data with matched slot name for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoBindClothData
+            );
+
+            FORMAT_COMMAND_INFO (3,
+                "Auto bind Material",
+                "Auto set existed Material with matched slot name for selected SkeletalMesh assets.",
+                FSkeletalMeshProcessor_AutoBindMaterials
             );
             // END
 

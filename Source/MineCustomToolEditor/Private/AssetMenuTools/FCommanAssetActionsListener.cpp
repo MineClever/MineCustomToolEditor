@@ -69,6 +69,32 @@ namespace FCommonAssetActionProcessors_Internal
         }
     };
 
+    //Delete Asset from SourceControl
+    class FCommonAssetSourceControlRemoveProcessor : public FAssetsProcessorFormSelection_Base
+    {
+
+        virtual void Execute () override
+        {
+            if (!FAssetSourceControlHelper::IsSourceControlAvailable())
+            {
+                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Not Found SourceControl!"));
+                return;
+            }
+
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Delete all selected assets from SourceControl"));
+            UAssetEditorSubsystem *&&AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+            TArray<FString> FilesPath;
+
+            for (auto const AssetData : SelectedAssets) {
+                auto const Asset = AssetData.GetAsset ();
+                AssetSubSystem->CloseAllEditorsForAsset (Asset);
+                FilesPath.Add (Asset->GetPackage ()->GetPathName ());
+            }
+
+            FAssetSourceControlHelper::MarkFilesForDelete (FilesPath);
+        }
+    };
+
     class FCommonAssetCopyPackagesPathProcessor : public FAssetsProcessorFormSelection_Base
     {
 

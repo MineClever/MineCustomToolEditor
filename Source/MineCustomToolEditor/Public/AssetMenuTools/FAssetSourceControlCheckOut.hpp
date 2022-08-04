@@ -256,7 +256,7 @@ public:
 		return CheckOutFiles (TempStringArray);
     }
 
-	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent=false, bool bAdd = true)
+	static bool CheckOutOrAddFiles (const TArray<FString> &InFiles, bool bSilent = false, bool bAdd = true)
 	{
 		// Determine file type and ensure it is in form source control wants
 		// Even if some files were skipped, still apply to the others
@@ -335,6 +335,145 @@ public:
 
 		return bSuccess;
 	}
+
+	static bool MarkFileForDelete (const FString &InFile, bool bSilent = false)
+	{
+		// Determine file type and ensure it is in form source control wants
+		FString SCFile = SourceControlHelpersInternal::ConvertFileToQualifiedPath (InFile, bSilent);
+
+		if (SCFile.IsEmpty ()) {
+			return false;
+		}
+
+		// Ensure source control system is up and running
+		ISourceControlProvider *Provider = SourceControlHelpersInternal::VerifySourceControl (bSilent);
+
+		if (!Provider) {
+			// Error or can't communicate with source control
+			// Could erase it anyway, though keeping it for now.
+			return false;
+		}
+
+		FSourceControlStatePtr SCState = Provider->GetState (SCFile, EStateCacheUsage::ForceUpdate);
+
+		if (!SCState.IsValid ()) {
+			// Improper or invalid SCC state
+			FFormatNamedArguments Arguments;
+			Arguments.Add (TEXT ("InFile"), FText::FromString (InFile));
+			Arguments.Add (TEXT ("SCFile"), FText::FromString (SCFile));
+			SourceControlHelpersInternal::LogError (FText::Format (LOCTEXT ("CouldNotDetermineState", "Could not determine source control state of file '{InFile}' ({SCFile})."), Arguments), bSilent);
+
+			return false;
+		}
+
+		bool bDelete = false;
+
+		if (SCState->IsSourceControlled ()) {
+			bool bAdded = SCState->IsAdded ();
+
+			if (bAdded || SCState->IsCheckedOut ()) {
+				if (Provider->Execute (ISourceControlOperation::Create<FRevert> (), SCFile) != ECommandResult::Succeeded) {
+					FFormatNamedArguments Arguments;
+					Arguments.Add (TEXT ("InFile"), FText::FromString (InFile));
+					Arguments.Add (TEXT ("SCFile"), FText::FromString (SCFile));
+					SourceControlHelpersInternal::LogError (FText::Format (LOCTEXT ("CouldNotRevert", "Could not revert source control state of file '{InFile}' ({SCFile})."), Arguments), bSilent);
+
+					return false;
+				}
+			}
+
+			if (!bAdded) {
+				// Was previously added to source control so mark it for delete
+				if (Provider->Execute (ISourceControlOperation::Create<FDelete> (), SCFile) != ECommandResult::Succeeded) {
+					FFormatNamedArguments Arguments;
+					Arguments.Add (TEXT ("InFile"), FText::FromString (InFile));
+					Arguments.Add (TEXT ("SCFile"), FText::FromString (SCFile));
+					SourceControlHelpersInternal::LogError (FText::Format (LOCTEXT ("CouldNotDelete", "Could not delete file '{InFile}' from source control ({SCFile})."), Arguments), bSilent);
+
+					return false;
+				}
+			}
+		}
+
+		// Delete file if it still exists
+		IFileManager &FileManager = IFileManager::Get ();
+
+		if (FileManager.FileExists (*SCFile)) {
+			// Just a regular file not tracked by source control so erase it.
+			// Don't bother checking if it exists since Delete doesn't care.
+			return FileManager.Delete (*SCFile, false, true);
+		}
+
+		return false;
+	}
+
+	static bool MarkFilesForDelete (const TArray<FString> &InFiles, bool bSilent = false)
+	{
+		// Determine file type and ensure it is in form source control wants
+		// Even if some files were skipped, still apply to the others
+		TArray<FString> SCFiles;
+		bool bFilesSkipped = !SourceControlHelpersInternal::ConvertFilesToQualifiedPaths (InFiles, SCFiles, bSilent);
+		const int32 NumFiles = SCFiles.Num ();
+
+		// Ensure source control system is up and running
+		ISourceControlProvider *Provider = SourceControlHelpersInternal::VerifySourceControl (bSilent);
+		if (!Provider) {
+			// Error or can't communicate with source control
+			// Could erase the files anyway, though keeping them for now.
+			return false;
+		}
+
+		TArray<FSourceControlStateRef> SCStates;
+		Provider->GetState (SCFiles, SCStates, EStateCacheUsage::ForceUpdate);
+
+		TArray<FString> SCFilesToRevert;
+		TArray<FString> SCFilesToMarkForDelete;
+		bool bCannotDeleteAtLeastOneFile = false;
+		for (int32 Index = 0; Index < NumFiles; ++Index) {
+			FString SCFile = SCFiles[Index];
+			FSourceControlStateRef SCState = SCStates[Index];
+
+			// Less error checking and info is made for multiple files than the single file version.
+			// This multi-file version could be made similarly more sophisticated.
+			if (SCState->IsSourceControlled ()) {
+				bool bAdded = SCState->IsAdded ();
+				if (bAdded || SCState->IsCheckedOut ()) {
+					SCFilesToRevert.Add (SCFile);
+				}
+
+				if (!bAdded) {
+					if (SCState->CanDelete ()) {
+						SCFilesToMarkForDelete.Add (SCFile);
+					}
+					else {
+						bCannotDeleteAtLeastOneFile = true;
+					}
+				}
+			}
+		}
+
+		bool bSuccess = !bFilesSkipped && !bCannotDeleteAtLeastOneFile;
+		if (SCFilesToRevert.Num ()) {
+			bSuccess &= Provider->Execute (ISourceControlOperation::Create<FRevert> (), SCFilesToRevert) == ECommandResult::Succeeded;
+		}
+
+		if (SCFilesToMarkForDelete.Num ()) {
+			bSuccess &= Provider->Execute (ISourceControlOperation::Create<FDelete> (), SCFilesToMarkForDelete) == ECommandResult::Succeeded;
+		}
+
+		// Delete remaining files if they still exist : 
+		IFileManager &FileManager = IFileManager::Get ();
+		for (FString SCFile : SCFiles) {
+			if (FileManager.FileExists (*SCFile)) {
+				// Just a regular file not tracked by source control so erase it.
+				// Don't bother checking if it exists since Delete doesn't care.
+				bSuccess &= FileManager.Delete (*SCFile, false, true);
+			}
+		}
+
+		return bSuccess;
+	}
+
 };
 
 
