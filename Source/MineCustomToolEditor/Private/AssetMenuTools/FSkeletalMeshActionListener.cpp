@@ -246,7 +246,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                 // Find Mat by MatIndex
                 FString MatchedPackagePath;
-
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
                     FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
 
@@ -260,15 +259,18 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         UObject *const MatAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
                         if (!IsValid (MatAsset)) continue;
 
-                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Type as @ %s"), *MatAsset->GetClass()->GetName());
                         // Cast to material type && Set new Material Interface
-                        // AllMats[MatId].MaterialInterface = ;
-
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Type as @ %s"), *MatAsset->GetClass ()->GetName ());
+                        auto const CurMatInterface = Cast<UMaterialInterface> (MatAsset);
+                        if (CurMatInterface == nullptr) continue;
+                        AllMats[MatId].MaterialInterface = CurMatInterface;
+                        break;
                     }
                 } // End Of Iterator of MatIds
 
-                //SkMesh->SetMaterials (AllMats);
-                //ObjectToSave.Emplace (SkMesh);
+                SkMesh->Modify ();
+                SkMesh->SetMaterials (AllMats);
+                ObjectToSave.Emplace (SkMesh);
 
             } // End of Iterator Of Assets
             UPackageTools::SavePackagesForObjects (ObjectToSave);
@@ -280,20 +282,20 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             ValidPathArray.Empty ();
             auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
             FString const ConfigMatPathRule =
-                ConfigSettings->bUseCustomProxyConfig ?
-                ConfigSettings->ConfigAlembicPathRule :
+                ConfigSettings->bUseCustomMaterialBindConfig ?
+                ConfigSettings->ConfigMaterialDirectoryRule :
                 TEXT ("material,mat,materials");
 
             // Convert into array
             TArray<FString> MaterialsRuleDirArray;
-            ConfigMatPathRule.ParseIntoArray (MaterialsRuleDirArray, *ConfigMatPathRule);
+            ConfigMatPathRule.ParseIntoArray (MaterialsRuleDirArray, TEXT (","), true);
 
             for (auto MaterialRuleDir : MaterialsRuleDirArray)
             {
                 FString TempDirPath;
                 FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
                 TempDirPath = FPaths::GetPath (TempDirPath) / MaterialRuleDir;
-
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("TempPath as @ %s"), *TempDirPath);
                 if (FPaths::DirectoryExists (TempDirPath)) {
                     ValidPathArray.AddUnique(TempDirPath);
                 }

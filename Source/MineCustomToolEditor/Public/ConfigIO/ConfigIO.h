@@ -56,6 +56,15 @@ public:
 
     UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
     float ConfigDistanceFiledResolutionScale = 24;
+
+    // All Material Bind Configures
+    ///////////////////////////////////////////////
+
+    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    bool bUseCustomMaterialBindConfig = false;
+
+    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    FString ConfigMaterialDirectoryRule = TEXT ("material,mat,materials");
 };
 
 
