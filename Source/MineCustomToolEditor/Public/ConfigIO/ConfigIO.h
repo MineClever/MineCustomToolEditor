@@ -60,10 +60,10 @@ public:
     // All Material Bind Configures
     ///////////////////////////////////////////////
 
-    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    UPROPERTY (EditAnywhere, config, Category = "MineMaterialBindRule")
     bool bUseCustomMaterialBindConfig = false;
 
-    UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
+    UPROPERTY (EditAnywhere, config, Category = "MineMaterialBindRule")
     FString ConfigMaterialDirectoryRule = TEXT ("material,mat,materials");
 };
 
