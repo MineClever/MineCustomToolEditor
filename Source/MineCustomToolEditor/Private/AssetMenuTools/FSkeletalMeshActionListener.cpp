@@ -239,7 +239,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                 // Generate abc dir path
                 TArray<FString> MatDirPathArray;
-                MakeRelativeMatDirPath (SkMesh->GetPathName (), MatDirPathArray);
+                MineMaterialPackageHelper::MakeRelativeMatDirPath (SkMesh->GetPathName (), MatDirPathArray);
 
                 // Found Materials
                 TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
@@ -252,7 +252,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     // traverse all valid path to find same named material
                     for (FString MatDirPath: MatDirPathArray)
                     {
-                        if (!HasFoundSlotNameMat(CurMatSlotName, MatDirPath, MatchedPackagePath)) continue;
+                        if (!MineMaterialPackageHelper::HasFoundSlotNameMat(CurMatSlotName, MatDirPath, MatchedPackagePath)) continue;
 
                         // Load Material to set
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
@@ -275,45 +275,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             } // End of Iterator Of Assets
             UPackageTools::SavePackagesForObjects (ObjectToSave);
         } // End Of ProcessAssets
-
-
-        static void MakeRelativeMatDirPath (const FString &MatPackagePath, TArray<FString> &ValidPathArray)
-        {
-            ValidPathArray.Empty ();
-            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
-            FString const ConfigMatPathRule =
-                ConfigSettings->bUseCustomMaterialBindConfig ?
-                ConfigSettings->ConfigMaterialDirectoryRule :
-                TEXT ("material,mat,materials");
-
-            // Convert into array
-            TArray<FString> MaterialsRuleDirArray;
-            ConfigMatPathRule.ParseIntoArray (MaterialsRuleDirArray, TEXT (","), true);
-
-            for (auto MaterialRuleDir : MaterialsRuleDirArray)
-            {
-                FString TempDirPath;
-                FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
-                TempDirPath = FPaths::GetPath (TempDirPath) / MaterialRuleDir;
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("TempPath as @ %s"), *TempDirPath);
-                if (FPaths::DirectoryExists (TempDirPath)) {
-                    ValidPathArray.AddUnique(TempDirPath);
-                }
-            }
-
-        }
-
-        static bool HasFoundSlotNameMat (const FName &MatSlotName, const FString &MatDirPath, FString &MatchedPackagePath)
-        {
-
-            MatchedPackagePath = FPaths::ConvertRelativePathToFull (MatDirPath, MatSlotName.ToString ());
-            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
-            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find Material @ %s"), *MatchedPackagePath);
-            if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
-                return true;
-            }
-            return false;
-        }
 
     }; // End Of Class
 

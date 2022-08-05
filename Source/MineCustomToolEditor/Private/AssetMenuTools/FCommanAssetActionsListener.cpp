@@ -1,8 +1,7 @@
-﻿#include "AssetMenuTools/FCommonAssetActionsListener.h"
+﻿#include "ObjectTools.h"
+#include "AssetMenuTools/FCommonAssetActionsListener.h"
 #include "PackageTools.h"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
-
-
 
 #define LOCTEXT_NAMESPACE "FCommanAssetActionsListener"
 
@@ -38,13 +37,24 @@ namespace FCommonAssetActionsMenuCommandsInfo_Internal
                 "Copy Asset Content Path from selected.",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
+            UI_COMMAND (MenuCommandInfo_2,
+                "Make Read-only",
+                "Make Selected assets Read-only",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
+            UI_COMMAND (MenuCommandInfo_3,
+                "Make Writable",
+                "Make Selected assets Writable",
+                EUserInterfaceActionType::Button, FInputGesture ()
+            );
         }
 
     public:
         /* Command Action Objects */
         TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
         TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
-
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_2;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_3;
     };
 
 };
@@ -69,29 +79,44 @@ namespace FCommonAssetActionProcessors_Internal
         }
     };
 
-    //Delete Asset from SourceControl
-    class FCommonAssetSourceControlRemoveProcessor : public FAssetsProcessorFormSelection_Base
+    // Read-Only Fix?
+    class FCommonAssetReadOnlyProcessor : public FAssetsProcessorFormSelection_Base
     {
 
         virtual void Execute () override
         {
-            if (!FAssetSourceControlHelper::IsSourceControlAvailable())
-            {
-                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Not Found SourceControl!"));
-                return;
-            }
 
-            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Delete all selected assets from SourceControl"));
             UAssetEditorSubsystem *&&AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
             TArray<FString> FilesPath;
-
             for (auto const AssetData : SelectedAssets) {
+                // Make sure asset unload!
                 auto const Asset = AssetData.GetAsset ();
                 AssetSubSystem->CloseAllEditorsForAsset (Asset);
-                FilesPath.Add (Asset->GetPackage ()->GetPathName ());
+                FString AssetPathName = Asset->GetPackage ()->GetPathName ();
+                FAssetSourceControlHelper::GetLowLevel ().SetReadOnly (*SourceControlHelpersInternal::ConvertFileToQualifiedPath(AssetPathName,true,false), true);
+                FilesPath.Add (AssetPathName);
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark Asset Read-only : %s"), *AssetPathName);
             }
+        }
+    };
 
-            FAssetSourceControlHelper::MarkFilesForDelete (FilesPath);
+    class FCommonAssetWritableProcessor : public FAssetsProcessorFormSelection_Base
+    {
+
+        virtual void Execute () override
+        {
+
+            UAssetEditorSubsystem *&&AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+            TArray<FString> FilesPath;
+            for (auto const AssetData : SelectedAssets) {
+                // Make sure asset unload!
+                auto const Asset = AssetData.GetAsset ();
+                AssetSubSystem->CloseAllEditorsForAsset (Asset);
+                FString AssetPathName = Asset->GetPackage ()->GetPathName ();
+                FAssetSourceControlHelper::GetLowLevel ().SetReadOnly (*SourceControlHelpersInternal::ConvertFileToQualifiedPath (AssetPathName, true, false), false);
+                FilesPath.Add (AssetPathName);
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark Asset Writable : %s"), *AssetPathName);
+            }
         }
     };
 
@@ -190,6 +215,8 @@ namespace FCommonAssetContentBrowserExtensions_Internal
             static const MineAssetCtxMenuCommandsInfo &ToolCommandsInfo = MineAssetCtxMenuCommandsInfo::Get ();
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_0);
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_2);
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_3);
         }
 
 
@@ -212,6 +239,22 @@ namespace FCommonAssetContentBrowserExtensions_Internal
                 FExecuteAction::CreateStatic (
                     &ExecuteProcessor,
                     AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetCopyPackagesPathProcessor> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfo_2,
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetReadOnlyProcessor> (SelectedAssets)
+                ),
+                FCanExecuteAction ()
+            );
+            CommandList->MapAction (
+                ToolCommandsInfo.MenuCommandInfo_3,
+                FExecuteAction::CreateStatic (
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetWritableProcessor> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
             );

@@ -4,6 +4,7 @@
 #include "FileHelpers.h"
 #include "Algo/Count.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ConfigIO/ConfigIO.h"
 
 namespace MinePackageLoadHelper
 {
@@ -251,6 +252,48 @@ namespace MinePackageLoadHelper
             UE_LOG (LogMineCustomToolEditor, Error, TEXT ("LoadAsset. Failed to load asset: %s"), *FailureReason);
         }
         return Result;
+    }
+
+}
+
+namespace MineMaterialPackageHelper
+{
+
+    static void MakeRelativeMatDirPath (const FString &MatPackagePath, TArray<FString> &ValidPathArray)
+    {
+        ValidPathArray.Empty ();
+        auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+        FString const ConfigMatPathRule =
+            ConfigSettings->bUseCustomMaterialBindConfig ?
+            ConfigSettings->ConfigMaterialDirectoryRule :
+            TEXT ("material,mat,materials");
+
+        // Convert into array
+        TArray<FString> MaterialsRuleDirArray;
+        ConfigMatPathRule.ParseIntoArray (MaterialsRuleDirArray, TEXT (","), true);
+
+        for (auto MaterialRuleDir : MaterialsRuleDirArray) {
+            FString TempDirPath;
+            FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
+            TempDirPath = FPaths::GetPath (TempDirPath) / MaterialRuleDir;
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("TempPath as @ %s"), *TempDirPath);
+            if (FPaths::DirectoryExists (TempDirPath)) {
+                ValidPathArray.AddUnique (TempDirPath);
+            }
+        }
+
+    }
+
+    static bool HasFoundSlotNameMat (const FName &MatSlotName, const FString &MatDirPath, FString &MatchedPackagePath)
+    {
+
+        MatchedPackagePath = FPaths::ConvertRelativePathToFull (MatDirPath, MatSlotName.ToString ());
+        FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
+        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find Material @ %s"), *MatchedPackagePath);
+        if (FPackageName::DoesPackageExist (MatchedPackagePath)) {
+            return true;
+        }
+        return false;
     }
 
 }

@@ -1,6 +1,7 @@
 #include "AssetMenuTools/FStaticMeshMenuActionsListener.h"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
+#include "AssetCreateHelper/FMinePackageToObjectHelper.hpp"
 #include "ConfigIO/ConfigIO.h"
 
 
@@ -163,6 +164,56 @@ public:
 };
 
 
+class FAssetsProcessorFormSelection_UStaticMesh_AutoBindMat : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
+{
+public:
+
+	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
+	{
+		TArray<UObject *> ObjectToSave;
+
+		for (auto const StaticMesh : Assets)
+		{
+			UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *StaticMesh->GetPathName ());
+			// Generate abc dir path
+			TArray<FString> MatDirPathArray;
+			MineMaterialPackageHelper::MakeRelativeMatDirPath (StaticMesh->GetPathName (), MatDirPathArray);
+
+			// Found all materials
+            TArray<FStaticMaterial> AllMats = StaticMesh->GetStaticMaterials();
+
+			// Find Mat by MatIndex
+			FString MatchedPackagePath;
+			for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+				FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+
+				// traverse all valid path to find same named material
+				for (FString MatDirPath : MatDirPathArray) {
+					if (!MineMaterialPackageHelper::HasFoundSlotNameMat (CurMatSlotName, MatDirPath, MatchedPackagePath)) continue;
+
+					// Load Material to set
+					UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
+					UObject *const MatAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+					if (!IsValid (MatAsset)) continue;
+
+					// Cast to material type && Set new Material Interface
+					UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Type as @ %s"), *MatAsset->GetClass ()->GetName ());
+					auto const CurMatInterface = Cast<UMaterialInterface> (MatAsset);
+					if (CurMatInterface == nullptr) continue;
+					AllMats[MatId].MaterialInterface = CurMatInterface;
+					break;
+				}
+			} // End Of Iterator of MatIds
+
+			StaticMesh->Modify ();
+			StaticMesh->SetStaticMaterials (AllMats);
+			ObjectToSave.Emplace (StaticMesh);
+		}
+		UPackageTools::SavePackagesForObjects (ObjectToSave);
+	};
+};
+
+
 //////////////////////////////////////////////////////////////////////////
 // FMineContentBrowserExtensions_UStaticMesh
 
@@ -241,35 +292,6 @@ public:
 		TArray<FAssetData> SelectedAssets
 	) 
 	{
-
-		//////////////////////////////////////////////////////////////
-		///
-		///	FAssetsProcessorFormSelection_UStaticMesh_PrintName
-
-	    //{
-	    //    TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_PrintName> const StaticMeshBaseProcessor =
-     //          MakeShareable(new FAssetsProcessorFormSelection_UStaticMesh_PrintName);
-
-	    //    // Add current selection to AssetsProcessor
-	    //    StaticMeshBaseProcessor->SelectedAssets = SelectedAssets;
-
-	    //    // Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
-	    //    FUIAction const Action_PrintName_ProcessFromAssets (
-     //           FExecuteAction::CreateStatic (
-     //               &FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
-     //               StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshBaseProcessor))
-     //       );
-
-	    //    // Add to Menu
-	    //    MenuBuilder.AddMenuEntry (
-     //           LOCTEXT ("CBE_StaticMesh_PrintName", "Copy Selected Assets name"),
-     //           LOCTEXT ("CBE_StaticMesh_PrintName_ToolTips", "Copy All selected assets name from selected"),
-     //           FSlateIcon (),
-     //           Action_PrintName_ProcessFromAssets,
-     //           NAME_None,
-     //           EUserInterfaceActionType::Button);
-	    //}
-
 
 		//////////////////////////////////////////////////////////////
 		///
@@ -355,6 +377,33 @@ public:
                 EUserInterfaceActionType::Button);
 	    }
 
+
+		//////////////////////////////////////////////////////////////
+		///
+		///	FAssetsProcessorFormSelection_UStaticMesh_AutoBindMat
+		{
+			TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_AutoBindMat> const StaticMeshAutoBindMatProcessor =
+				MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_AutoBindMat);
+
+			// Add current selection to AssetsProcessor
+			StaticMeshAutoBindMatProcessor->SelectedAssets = SelectedAssets;
+
+			// Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+			FUIAction const Action_AutoBindMat_ProcessFromAssets (
+				FExecuteAction::CreateStatic (
+					&FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+					StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshAutoBindMatProcessor))
+			);
+
+			// Add to Menu
+			MenuBuilder.AddMenuEntry (
+				LOCTEXT ("CBE_StaticMesh_AutoBindMat", "Auto Bind Material"),
+				LOCTEXT ("CBE_StaticMesh_AutoBindMat_ToolTips", "Auto bind material from selected"),
+				FSlateIcon (),
+				Action_AutoBindMat_ProcessFromAssets,
+				NAME_None,
+				EUserInterfaceActionType::Button);
+		}
 
 		//////////////////////////////////////////////////////////////
 		///

@@ -436,6 +436,9 @@ public:
 			// Less error checking and info is made for multiple files than the single file version.
 			// This multi-file version could be made similarly more sophisticated.
 			if (SCState->IsSourceControlled ()) {
+				//Force to read-only to fix p4 elder version bug
+				GetLowLevel ().SetReadOnly (*SCFile, true);
+
 				bool bAdded = SCState->IsAdded ();
 				if (bAdded || SCState->IsCheckedOut ()) {
 					SCFilesToRevert.Add (SCFile);
@@ -458,21 +461,36 @@ public:
 		}
 
 		if (SCFilesToMarkForDelete.Num ()) {
+			// Must check out to delete
+			Provider->Execute (ISourceControlOperation::Create<FCheckOut> (), SCFilesToMarkForDelete);
 			bSuccess &= Provider->Execute (ISourceControlOperation::Create<FDelete> (), SCFilesToMarkForDelete) == ECommandResult::Succeeded;
 		}
 
 		// Delete remaining files if they still exist : 
 		IFileManager &FileManager = IFileManager::Get ();
+		TArray<FString> FileFallback;
 		for (FString SCFile : SCFiles) {
 			if (FileManager.FileExists (*SCFile)) {
 				// Just a regular file not tracked by source control so erase it.
 				// Don't bother checking if it exists since Delete doesn't care.
-				bSuccess &= FileManager.Delete (*SCFile, false, true);
+				bool const bDeleted = FileManager.Delete (*SCFile, false, true);
+				if (!bDeleted) {
+					GetLowLevel ().SetReadOnly (*SCFile, true);
+				}// recovery file , when falla
+				bSuccess &= bDeleted;
 			}
 		}
 
+
 		return bSuccess;
 	}
+
+	// instead of caching the LowLevel, we call the singleton each time to never be incorrect
+	FORCEINLINE static IPlatformFile &GetLowLevel ()
+	{
+		return FPlatformFileManager::Get ().GetPlatformFile ();
+	}
+
 
 };
 

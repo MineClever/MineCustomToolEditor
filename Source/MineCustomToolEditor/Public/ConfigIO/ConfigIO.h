@@ -57,6 +57,10 @@ public:
     UPROPERTY (EditAnywhere, config, Category = "MineStaticMeshProcessor")
     float ConfigDistanceFiledResolutionScale = 24;
 
+    // All SkeletalMesh Asset Configures
+    ///////////////////////////////////////////////
+
+
     // All Material Bind Configures
     ///////////////////////////////////////////////
 
