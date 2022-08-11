@@ -11,7 +11,7 @@ void FMineToolConfigLoader::OnStartupModule ()
     BaseSetting.DisplayName = FText::FromString (TEXT ("MineEditorSettings"));
     BaseSetting.DescriptionName = FText::FromString (TEXT ("Configure Settings"));
 
-        // register settings:
+    // Register settings:
     {
         ISettingsModule *SettingsModule = FModuleManager::GetModulePtr<ISettingsModule> ("Settings");
         if (SettingsModule) {
@@ -25,11 +25,35 @@ void FMineToolConfigLoader::OnStartupModule ()
             );
         }
     };
+
+    // Fix Camera NearClip
+    auto TimerToSetNearClip = [&]()
+    {
+        auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+
+        if (ConfigSettings->bUseCustomDefaultCameraConfig)
+        {
+            // NOTE: Remove FarClip Limit Inside? FIX BUG !
+            if (ConfigSettings->bForceClearViewportFarClipOverride)
+            {
+                auto AllViewPorts = GEditor->GetAllViewportClients ();
+                for (FEditorViewportClient *ViewPort : AllViewPorts) {
+                    ViewPort->OverrideFarClipPlane (-1.0);
+                }
+            }
+
+            GNearClippingPlane = ConfigSettings->ConfigStartUpNearClip;
+        }
+    };
+
+    TSharedPtr<FTimerHandle> const TimerHandlePtr = MakeShareable (new FTimerHandle);
+    GEditor->GetTimerManager ()->SetTimer (*TimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0, true, 5.0);
+
 }
 
 void FMineToolConfigLoader::OnShutdownModule ()
 {
-    // unregister settings
+    // Unregistered settings
     ISettingsModule *SettingsModule = FModuleManager::GetModulePtr<ISettingsModule> ("Settings");
     if (SettingsModule) {
         SettingsModule->UnregisterSettings (BaseSetting.ContainerName, BaseSetting.CategoryName, BaseSetting.SectionName);

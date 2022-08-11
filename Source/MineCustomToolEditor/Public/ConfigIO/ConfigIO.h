@@ -9,6 +9,19 @@ class CURRENT_CUSTOM_MODULE_API UMineEditorConfigSettings : public UObject
     GENERATED_BODY ()
 
 public:
+    // All Default Camera Configures
+    ///////////////////////////////////////////////
+    ///
+    UPROPERTY (EditAnywhere, config, Category = "MineDefaultCameraOverride")
+        bool bUseCustomDefaultCameraConfig = true;
+
+    UPROPERTY (EditAnywhere, config, Category = "MineDefaultCameraOverride")
+        bool bForceClearViewportFarClipOverride = false;
+
+    UPROPERTY (EditAnywhere, config, Category = "MineDefaultCameraOverride")
+        float ConfigStartUpNearClip = 0.00001;
+
+
     // All Alembic Proxy Configures
     ///////////////////////////////////////////////
 
