@@ -49,7 +49,39 @@ namespace FAlembicAssetProcessor_Internal
     };
 }
 
+namespace FAlembicAssetMenuActionsListener_Internal
+{
+    /* Extension to menu */
+    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, MineAssetCtxMenuCommandsInfo>
+    {
+    public:
 
+        FMineContentBrowserExtensions_SelectedAssets ()
+        {
+            FMineContentBrowserExtensions_SelectedAssets::InitSubMenu ();
+        }
+
+        virtual void InitSubMenu () override
+        {
+
+            FNsLocTextDescriptions LSubMenuDescriptions;
+            LSubMenuDescriptions.Key = TEXT ("AlembicActionsSubMenuLabel");
+            LSubMenuDescriptions.KeyDescription = TEXT ("Alembic Cache Asset Actions");
+            LSubMenuDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
+            this->SubMenuDescriptions = LSubMenuDescriptions;
+
+            FNsLocTextDescriptions LSubMenuTipDescriptions;
+            LSubMenuTipDescriptions.Key = TEXT ("AlembicActionsSubMenuToolTip");
+            LSubMenuTipDescriptions.KeyDescription = TEXT ("Type-related actions for Alembic Cache Asset.");
+            LSubMenuTipDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
+            this->SubMenuTipDescriptions = LSubMenuTipDescriptions;
+
+            this->SubMenuInExtensionHookName = FName (TEXT ("AlembicAssetsActions"));
+            this->SubMenuIcon = FSlateIcon ();
+        }
+
+    };
+}
 
 namespace FAlembicAssetActionsMenuCommandsInfo_Internal
 {
@@ -87,6 +119,42 @@ namespace FAlembicAssetActionsMenuCommandsInfo_Internal
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineUSkeletalMeshAssetCtxMenu");
 
 };
+
+
+/* Load to module */
+namespace FAlembicAssetMenuActionsListener_Internal
+{
+
+    // Important : Init Extension Class
+    TSharedRef<TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, MineAssetCtxMenuCommandsInfo>>
+        FSkeletalMeshMenuActionsListener::MenuExtension =
+        MakeShareable (new FMineContentBrowserExtensions_SelectedAssets);
+
+    void FSkeletalMeshMenuActionsListener::InstallHooks ()
+    {
+        // Push Log
+        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Install %s Asset Menu Hook"), *FMineContentBrowserExtensions_SelectedAssets::AssetTypeName.ToString ());
+
+        // register commands
+        MineAssetCtxMenuCommandsInfo::Register ();
+
+        // Declare Delegate 
+        ContentBrowserExtenderDelegate =
+            FContentBrowserMenuExtender_SelectedAssets::CreateSP (
+                MenuExtension,
+                &FMineContentBrowserExtensions_SelectedAssets::OnExtendContentBrowserAssetSelectionMenu
+            );
+
+        // Get all content module delegates
+        TArray<FContentBrowserMenuExtender_SelectedAssets> &CBMenuExtenderDelegates = GetExtenderDelegates ();
+
+        // Add The delegate of mine
+        CBMenuExtenderDelegates.Add (ContentBrowserExtenderDelegate);
+
+        // Store handle
+        ContentBrowserExtenderDelegateHandle = CBMenuExtenderDelegates.Last ().GetHandle ();
+    }
+}
 
 
 #undef LOCTEXT_NAMESPACE
