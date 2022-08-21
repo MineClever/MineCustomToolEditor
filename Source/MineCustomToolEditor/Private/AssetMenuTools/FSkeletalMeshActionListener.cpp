@@ -9,6 +9,7 @@
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "GeometryCache.h"
+#include "GeometryCacheTrack.h"
 #include "ConfigIO/ConfigIO.h"
 
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
@@ -100,18 +101,18 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             TArray<UObject *> ObjectToSave;
             bool const IsSourceControlValid = FAssetSourceControlHelper::IsSourceControlAvailable ();
 
-            for (auto SkIt = Assets.CreateConstIterator (); SkIt; ++SkIt) {
+            for (auto MeshIterator = Assets.CreateConstIterator (); MeshIterator; ++MeshIterator) {
 
                 // Start job!
-                auto const SkMesh = *SkIt;
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *SkMesh->GetPathName ());
+                auto const CurrentMesh = *MeshIterator;
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *CurrentMesh->GetPathName ());
 
                 // Generate abc dir path
                 TArray<FString> AbcPathArray;
-                MakeRelativeAbcDirPath (SkMesh->GetPathName(), AbcPathArray);
+                MakeRelativeAbcDirPath (CurrentMesh->GetPathName(), AbcPathArray);
 
                 // Found Materials
-                TArray<FSkeletalMaterial> AllMats = SkMesh->GetMaterials ();
+                TArray<FSkeletalMaterial> AllMats = CurrentMesh->GetMaterials ();
 
                 // Find Mat by MatIndex
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
@@ -186,7 +187,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
             FString const ConfigSubPathRule =
                 ConfigSettings->bUseCustomProxyConfig ?
-                ConfigSettings->ConfigAlembicSubDirMatchKey : TEXT ("Cloth");
+                ConfigSettings->ConfigAlembicClothSubDirMatchKey : TEXT ("Cloth");
             MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / ConfigSubPathRule, MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
             // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to found Alembic @ %s"), *MatchedPackagePath);
@@ -218,6 +219,141 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 AbcPathArray = Visitor.DirectoryArray;
             }
         }
+    }; // End Of Class
+
+    class FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
+    {
+
+    public:
+        FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots () :TAssetsProcessorFormSelection_Builder<LocAssetType> (false)
+        {
+            // Without SourceControl init
+        }
+
+        virtual void ProcessAssets (TArray<LocAssetType *> &Assets) override
+        {
+
+            TArray<UObject *> ObjectToSave;
+            bool const IsSourceControlValid = FAssetSourceControlHelper::IsSourceControlAvailable ();
+
+            auto LambdaCheckIfSameMat = [&](const FString &CurrentMatPath, const TArray<FSkeletalMaterial> &AllMats)->bool {
+                bool bHasFoundSamePath = false;
+                // Find Mat by MatIndex
+                for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+                    bHasFoundSamePath = AllMats[MatId].MaterialInterface->GetPathName () == CurrentMatPath;
+                    if (bHasFoundSamePath) break;
+                }
+                return bHasFoundSamePath;
+            };
+
+            for (auto const CurrentMesh : Assets) {
+
+                // Start job!
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *CurrentMesh->GetPathName ());
+
+                // Generate abc dir path
+                TArray<FString> AbcPathArray;
+                FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath (CurrentMesh->GetPathName (), AbcPathArray);
+
+                // Found Materials
+                TArray<FSkeletalMaterial> AllMats = CurrentMesh->GetMaterials ();
+
+
+                // Traversal all Alembic Sub-Path
+                for (auto AbcDirPath : AbcPathArray) {
+
+                    if (!FPaths::DirectoryExists (AbcDirPath)) continue;
+
+                    // Make sure Abc Package path is valid, Or Skip
+                    TArray<FString> MatchedPackagePaths;
+                    if (!HasFoundAnimationAbcFiles (AbcDirPath, MatchedPackagePaths))
+                        continue;
+
+                    for (auto const MatchedPackagePath: MatchedPackagePaths)
+                    {
+                        // Load Asset to UObject to modify
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
+                        UObject *const AbcAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+                        if (!IsValid (AbcAsset)) continue;
+
+                        // Check if abc type
+                        auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
+                        if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
+                            UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache, SKIP\n"), *AbcAsset->GetFullName ());
+                            continue;
+                        }
+
+                        // Get Current Geometry Materials && Tracks
+                        TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
+                        TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
+                        int32 &&GeometryCacheTracksCount = GeoCacheTracks.Num ();
+
+                        for (uint16 GeoCacheTrackId=0; GeoCacheTrackId< GeometryCacheTracksCount; ++GeoCacheTrackId)
+                        {
+	                        FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
+
+                            // TODO: Use regex to search main ruled name && material section index in cache
+                            static uint16 MatchedCurMatId = 0;
+                            static FString MatchedCurMainName = "String";
+
+                            // Check if Already Material has been set
+                            if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
+                                continue;
+
+                            // TODO: Use main string to make slot mat name
+                            static uint16 RefMeshMatId = 0;
+
+                            GeoCacheMatArray[MatchedCurMatId] = AllMats[RefMeshMatId].MaterialInterface;
+                        }
+
+
+                        // Check Out file to Modify
+                        if (IsSourceControlValid) {
+                            if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath)) {
+                                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s Can't checkout, SKIP\n"), *AbcAsset->GetFullName ());
+                                continue;
+                            }
+                        }
+
+                        // Update GeometryCache Materials
+                        GeoCache->Modify ();
+                        GeoCache->Materials = GeoCacheMatArray;
+                        ObjectToSave.Add (AbcAsset);
+                    }
+                }
+            } 
+            UPackageTools::SavePackagesForObjects (ObjectToSave);
+        } // End Of ProcessAssets
+
+        /**
+         * @brief :Check if Animation Cache Abc File in inputted Abc Directory Path with config rule
+         */
+        static bool HasFoundAnimationAbcFiles (const FString &AbcDirPath, TArray<FString> &MatchedPackagePaths)
+        {
+            // Return if any valid abc package
+            bool bHasFoundValidAbc = false;
+
+            // Read config to match sub-dir
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            const FString &&ConfigSubPathRule =
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicAnimationSubDirMatchKey : TEXT ("AnimCache");
+            FString &&MatchedDirPath = FPaths::ConvertRelativePathToFull(AbcDirPath / ConfigSubPathRule);
+
+            // TODO: Find all package path under current AnimCache Directory
+            FString MatchedPackagePath;
+
+
+            // Check if valid packages
+            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
+            bool &&bIsValidPackage = FPackageName::DoesPackageExist (MatchedPackagePath) ? true : false;
+            if (bIsValidPackage)
+                MatchedPackagePaths.Emplace(MatchedPackagePath);
+
+            bHasFoundValidAbc |= bIsValidPackage;
+            return bHasFoundValidAbc;
+        }
+
     }; // End Of Class
 
     class FSkeletalMeshProcessor_AutoBindMaterials: public TAssetsProcessorFormSelection_Builder<LocAssetType>
@@ -277,7 +413,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
         } // End Of ProcessAssets
 
     }; // End Of Class
-
 
     class FSkeletalMeshProcessor_AutoBindClothData : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {

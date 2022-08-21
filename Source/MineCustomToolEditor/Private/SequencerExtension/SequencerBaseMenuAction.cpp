@@ -301,7 +301,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             auto const ConfigSettings = LoadConfig ();
             FString const ConfigSubPathRule = 
                 ConfigSettings->bUseCustomProxyConfig ?
-                ConfigSettings->ConfigAlembicSubDirMatchKey : TEXT ("Cloth");
+                ConfigSettings->ConfigAlembicClothSubDirMatchKey : TEXT ("Cloth");
 
             MatchedPackagePath = FPaths::ConvertRelativePathToFull (AbcDirPath / ConfigSubPathRule, MatSlotName.ToString ());
             FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
