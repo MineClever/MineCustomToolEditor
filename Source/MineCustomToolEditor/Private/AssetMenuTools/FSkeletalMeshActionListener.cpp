@@ -248,13 +248,31 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 return bHasFoundSamePath;
             };
 
-            auto LambdaRegexMatch = [&](const FString &Str, const FString &Pattern, TArray<FString> &Result)->bool {
-                FRegexMatcher Matcher (FRegexPattern(Pattern), Str);
-
+            auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
+                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(.*?)(?:Shape)_(\\d?)$"));
+                FRegexMatcher Matcher (Patten, Str);
+                Result.Empty ();
                 while (Matcher.FindNext ()) {
-                    Result.Add (Matcher.GetCaptureGroup (0));
+                    Result.Emplace (Matcher.GetCaptureGroup (1));
+                    Result.Emplace (Matcher.GetCaptureGroup (2));
                 }
                 return Result.Num () == 0 ? false : true;
+            };
+
+            auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID)
+            {
+                bool bHasFoundMatchedMatId = false;
+                for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString) != 0)
+                        continue;
+                    else
+                    {
+                        RefMatID = MatId;
+                        bHasFoundMatchedMatId = true;
+                    	break;
+                    }
+                }
+                return bHasFoundMatchedMatId;
             };
 
             for (auto const CurrentMesh : Assets) {
@@ -294,7 +312,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             continue;
                         }
 
-                        // Get Current Geometry Materials && Tracks
+                        // NOTE: Get Current Geometry Materials && Tracks
                         TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
                         TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
                         int32 &&GeometryCacheTracksCount = GeoCacheTracks.Num ();
@@ -302,25 +320,27 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         for (uint16 GeoCacheTrackId=0; GeoCacheTrackId< GeometryCacheTracksCount; ++GeoCacheTrackId)
                         {
 	                        FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
-
-                            // TODO: Use regex to search main ruled name && material section index in cache
-                            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_2" <- Alembic Stream-able Track Name
-                            TArray<FString> RegexMatchResult;
-                            if (LambdaRegexMatch (CurrentTrackName,TEXT("^(.*?)(?:Shape)_(\d?)$"), RegexMatchResult))
-                            {
-                                
-                            }
-
-
                             static uint16 MatchedCurMatId = 0;
-                            static FString MatchedCurMainName = "String";
+                            static FString MatchedCurMainName = "unknownMesh";
 
-                            // Check if Already Material has been set
+                            // NOTE: Use regex to search main ruled name && material section index in cache
+                            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_0" <- Alembic Stream-able Track Name
+                            static TArray<FString> RegexMatchResult;
+                            if (LambdaRegexMatchShape (CurrentTrackName, RegexMatchResult))
+                            {
+                                MatchedCurMainName = RegexMatchResult[0];
+                                MatchedCurMatId = FCString::Atoi (*RegexMatchResult[1]);
+                            } else continue;
+
+
+                            // NOTE: Check if Already Material has been set
                             if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
                                 continue;
 
-                            // TODO: Use main string to make slot mat name
-                            static uint16 RefMeshMatId = 0;
+                            // Use main string to make slot mat name
+                            static uint16 RefMeshMatId;
+                            if (!LambdaFindMatIdByName (MatchedCurMainName, AllMats, RefMeshMatId))
+                                continue;
 
                             GeoCacheMatArray[MatchedCurMatId] = AllMats[RefMeshMatId].MaterialInterface;
                         }
@@ -360,6 +380,13 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             // Find all package name under current AnimCache Directory
             MatchedPackagePaths.Empty ();
             IFileManager::Get ().FindFiles (MatchedPackagePaths, *MatchedDirPath, TEXT ("uasset"));
+
+            // NOTE: make fully path
+            for (int PathId =0 ;PathId < MatchedPackagePaths.Num (); ++PathId)
+            {
+                //PackageName = FPaths::ConvertRelativePathToFull (MatchedDirPath, PackageName);
+                 FPackageName::TryConvertFilenameToLongPackageName ((MatchedDirPath / MatchedPackagePaths[PathId]), MatchedPackagePaths[PathId]);
+            }
 
             return MatchedPackagePaths.Num () > 0 ? true : false;
 
@@ -533,15 +560,22 @@ namespace FSkeletalMeshActionsMenuCommandsInfo_Internal
                 "such that it has been followed by [CurrentAssetDir]/Animations/Alembic/[SubDir]/Cloth/[MatSlotName]",
                 FSkeletalMeshProcessor_AbcClothBindToMatSlots
             );
-
             // 2
             FORMAT_COMMAND_INFO (2,
+                "Set ABC-AnimCache Mat",
+                "Auto set Alembic GeometryCache Materials reference to selected SkeletalMesh assets.\n"
+                "such that it has been followed by [CurrentAssetDir]/Animations/Alembic/[SubDir]/AnimCache",
+                FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots
+            );
+            // 3
+            FORMAT_COMMAND_INFO (3,
                 "Set Cloth to MatSlot",
                 "Auto set existed Cloth-Data with matched slot name for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoBindClothData
             );
 
-            FORMAT_COMMAND_INFO (3,
+            //4
+            FORMAT_COMMAND_INFO (4,
                 "Auto bind Material",
                 "Auto set existed Material with matched slot name for selected SkeletalMesh assets.",
                 FSkeletalMeshProcessor_AutoBindMaterials

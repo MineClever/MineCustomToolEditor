@@ -49,45 +49,12 @@ namespace FAlembicAssetProcessor_Internal
     };
 }
 
-namespace FAlembicAssetMenuActionsListener_Internal
-{
-    /* Extension to menu */
-    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, MineAssetCtxMenuCommandsInfo>
-    {
-    public:
-
-        FMineContentBrowserExtensions_SelectedAssets ()
-        {
-            FMineContentBrowserExtensions_SelectedAssets::InitSubMenu ();
-        }
-
-        virtual void InitSubMenu () override
-        {
-
-            FNsLocTextDescriptions LSubMenuDescriptions;
-            LSubMenuDescriptions.Key = TEXT ("AlembicActionsSubMenuLabel");
-            LSubMenuDescriptions.KeyDescription = TEXT ("Alembic Cache Asset Actions");
-            LSubMenuDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
-            this->SubMenuDescriptions = LSubMenuDescriptions;
-
-            FNsLocTextDescriptions LSubMenuTipDescriptions;
-            LSubMenuTipDescriptions.Key = TEXT ("AlembicActionsSubMenuToolTip");
-            LSubMenuTipDescriptions.KeyDescription = TEXT ("Type-related actions for Alembic Cache Asset.");
-            LSubMenuTipDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
-            this->SubMenuTipDescriptions = LSubMenuTipDescriptions;
-
-            this->SubMenuInExtensionHookName = FName (TEXT ("AlembicAssetsActions"));
-            this->SubMenuIcon = FSlateIcon ();
-        }
-
-    };
-}
 
 namespace FAlembicAssetActionsMenuCommandsInfo_Internal
 {
     using namespace FAlembicAssetProcessor_Internal;
 	using namespace TMineContentBrowserExtensions_SelectedAssets_Internal;
-	class MineAssetCtxMenuCommandsInfo  final : public TCommands<MineAssetCtxMenuCommandsInfo>, public MineAssetCtxMenuCommands_CommandMap
+	class MineAssetCtxMenuCommandsInfo : public TCommands<MineAssetCtxMenuCommandsInfo>, public MineAssetCtxMenuCommands_CommandMap
 	{
     public:
 
@@ -119,6 +86,40 @@ namespace FAlembicAssetActionsMenuCommandsInfo_Internal
     FName MineAssetCtxMenuCommandsInfo::MenuCtxName = TEXT ("MineUSkeletalMeshAssetCtxMenu");
 
 };
+
+namespace FAlembicAssetMenuActionsListener_Internal
+{
+    /* Extension to menu */
+    class FMineContentBrowserExtensions_SelectedAssets : public TMineContentBrowserExtensions_SelectedAssets_Base<LocAssetType, FAlembicAssetActionsMenuCommandsInfo_Internal::MineAssetCtxMenuCommandsInfo>
+    {
+    public:
+
+        FMineContentBrowserExtensions_SelectedAssets ()
+        {
+            FMineContentBrowserExtensions_SelectedAssets::InitSubMenu ();
+        }
+
+        virtual void InitSubMenu () override
+        {
+
+            FNsLocTextDescriptions LSubMenuDescriptions;
+            LSubMenuDescriptions.Key = TEXT ("AlembicActionsSubMenuLabel");
+            LSubMenuDescriptions.KeyDescription = TEXT ("Alembic Cache Asset Actions");
+            LSubMenuDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
+            this->SubMenuDescriptions = LSubMenuDescriptions;
+
+            FNsLocTextDescriptions LSubMenuTipDescriptions;
+            LSubMenuTipDescriptions.Key = TEXT ("AlembicActionsSubMenuToolTip");
+            LSubMenuTipDescriptions.KeyDescription = TEXT ("Type-related actions for Alembic Cache Asset.");
+            LSubMenuTipDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
+            this->SubMenuTipDescriptions = LSubMenuTipDescriptions;
+
+            this->SubMenuInExtensionHookName = FName (TEXT ("AlembicAssetsActions"));
+            this->SubMenuIcon = FSlateIcon ();
+        }
+
+    };
+}
 
 
 /* Load to module */
