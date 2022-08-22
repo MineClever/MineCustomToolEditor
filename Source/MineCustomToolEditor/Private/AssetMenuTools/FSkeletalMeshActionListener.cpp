@@ -281,11 +281,12 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             for (auto const CurrentMesh : Assets) {
 
                 // Start job!
-                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *CurrentMesh->GetPathName ());
+                auto const CurrentPathName = CurrentMesh->GetPathName ();
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *CurrentPathName);
 
                 // Generate abc dir path
                 TArray<FString> AbcPathArray;
-                FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath (CurrentMesh->GetPathName (), AbcPathArray);
+                FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath (CurrentPathName, AbcPathArray);
 
                 // Found Materials
                 TArray<FSkeletalMaterial> AllMats = CurrentMesh->GetMaterials ();
@@ -320,13 +321,21 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
                         int32 &&GeometryCacheTracksCount = GeoCacheTracks.Num ();
 
-                        for (uint16 GeoCacheTrackId=0; GeoCacheTrackId< GeometryCacheTracksCount; ++GeoCacheTrackId)
+                        // NOTE: Skip when Flattened track or no track here
+                        if (GeometryCacheTracksCount < 1 || GeoCacheTracks[0]->GetFName() == FName(TEXT("Flattened_Track")))
                         {
-	                        FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
+                            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("%s is Flattened Alembic Track, SKIP!\n"), *AbcAsset->GetFullName ());
+                            continue;
+                        }
+
+                        bool bShouldModify = false;
+                        for (uint16 GeoCacheTrackId=0; GeoCacheTrackId < GeometryCacheTracksCount; ++GeoCacheTrackId)
+                        {
+                            static FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
                             static uint16 MatchedCurMatId = 0;
-                            static FString MatchedCurMainName = "unknownMesh";
+                            static FString MatchedCurMainName = "UnknownMesh";
 
-
+                            // NOTE: Found main mesh name and section index
                             static TArray<FString> RegexMatchResult;
                             if (LambdaRegexMatchShape (CurrentTrackName, RegexMatchResult))
                             {
@@ -334,19 +343,19 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 MatchedCurMatId = FCString::Atoi (*RegexMatchResult[1]);
                             } else continue;
 
-
                             // NOTE: Check if Already Material has been set
                             if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
                                 continue;
 
-                            // Use main string to make slot mat name
+                            // NOTE: Use main string to make slot mat name
                             static uint16 RefMeshMatId;
                             if (!LambdaFindMatIdByName (MatchedCurMainName, AllMats, RefMeshMatId))
                                 continue;
 
                             GeoCacheMatArray[MatchedCurMatId] = AllMats[RefMeshMatId].MaterialInterface;
+                            bShouldModify = true;
                         }
-
+                        if (!bShouldModify) continue;
 
                         // Check Out file to Modify
                         if (IsSourceControlValid) {
