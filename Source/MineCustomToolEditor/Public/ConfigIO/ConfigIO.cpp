@@ -29,7 +29,7 @@ void FMineToolConfigLoader::OnStartupModule ()
     // Fix Camera NearClip
     auto TimerToSetNearClip = [&]()
     {
-        auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+        static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
 
         if (ConfigSettings->bUseCustomDefaultCameraConfig)
         {

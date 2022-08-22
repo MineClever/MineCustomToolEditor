@@ -12,6 +12,8 @@
 #include "GeometryCacheTrack.h"
 #include "ConfigIO/ConfigIO.h"
 
+#include "Internationalization/Regex.h"
+
 #define LOCTEXT_NAMESPACE "FSkeletalMeshActionsListener"
 
 
@@ -246,6 +248,15 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 return bHasFoundSamePath;
             };
 
+            auto LambdaRegexMatch = [&](const FString &Str, const FString &Pattern, TArray<FString> &Result)->bool {
+                FRegexMatcher Matcher (FRegexPattern(Pattern), Str);
+
+                while (Matcher.FindNext ()) {
+                    Result.Add (Matcher.GetCaptureGroup (0));
+                }
+                return Result.Num () == 0 ? false : true;
+            };
+
             for (auto const CurrentMesh : Assets) {
 
                 // Start job!
@@ -293,6 +304,14 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 	                        FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
 
                             // TODO: Use regex to search main ruled name && material section index in cache
+                            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_2" <- Alembic Stream-able Track Name
+                            TArray<FString> RegexMatchResult;
+                            if (LambdaRegexMatch (CurrentTrackName,TEXT("^(.*?)(?:Shape)_(\d?)$"), RegexMatchResult))
+                            {
+                                
+                            }
+
+
                             static uint16 MatchedCurMatId = 0;
                             static FString MatchedCurMainName = "String";
 
@@ -330,8 +349,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
          */
         static bool HasFoundAnimationAbcFiles (const FString &AbcDirPath, TArray<FString> &MatchedPackagePaths)
         {
-            // Return if any valid abc package
-            bool bHasFoundValidAbc = false;
 
             // Read config to match sub-dir
             auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
@@ -340,18 +357,23 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 ConfigSettings->ConfigAlembicAnimationSubDirMatchKey : TEXT ("AnimCache");
             FString &&MatchedDirPath = FPaths::ConvertRelativePathToFull(AbcDirPath / ConfigSubPathRule);
 
-            // TODO: Find all package path under current AnimCache Directory
-            FString MatchedPackagePath;
+            // Find all package name under current AnimCache Directory
+            MatchedPackagePaths.Empty ();
+            IFileManager::Get ().FindFiles (MatchedPackagePaths, *MatchedDirPath, TEXT ("uasset"));
 
+            return MatchedPackagePaths.Num () > 0 ? true : false;
 
             // Check if valid packages
-            FPackageName::TryConvertFilenameToLongPackageName (MatchedPackagePath, MatchedPackagePath);
-            bool &&bIsValidPackage = FPackageName::DoesPackageExist (MatchedPackagePath) ? true : false;
-            if (bIsValidPackage)
-                MatchedPackagePaths.Emplace(MatchedPackagePath);
+            // Return if any valid abc package
+            // bool bHasFoundValidAbc = false;
+            // FString PackageName;
+            //FPackageName::TryConvertFilenameToLongPackageName (PackageName, PackageName);
+            //bool &&bIsValidPackage = FPackageName::DoesPackageExist (PackageName) ? true : false;
+            //if (bIsValidPackage)
+            //    MatchedPackagePaths.Emplace(PackageName);
 
-            bHasFoundValidAbc |= bIsValidPackage;
-            return bHasFoundValidAbc;
+            //bHasFoundValidAbc |= bIsValidPackage;
+            //return bHasFoundValidAbc;
         }
 
     }; // End Of Class
