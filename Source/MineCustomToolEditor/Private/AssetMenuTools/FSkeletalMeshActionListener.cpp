@@ -248,6 +248,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 return bHasFoundSamePath;
             };
 
+            // NOTE: Use regex to search main ruled name && material section index in cache
+            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_0" <- Alembic Stream-able Track Name
+            // Get $1 == "GreenOne", $2 == "0"
             auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
                 static const FRegexPattern Patten = FRegexPattern(TEXT ("^(.*?)(?:Shape)_(\\d?)$"));
                 FRegexMatcher Matcher (Patten, Str);
@@ -323,8 +326,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             static uint16 MatchedCurMatId = 0;
                             static FString MatchedCurMainName = "unknownMesh";
 
-                            // NOTE: Use regex to search main ruled name && material section index in cache
-                            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_0" <- Alembic Stream-able Track Name
+
                             static TArray<FString> RegexMatchResult;
                             if (LambdaRegexMatchShape (CurrentTrackName, RegexMatchResult))
                             {
@@ -389,18 +391,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             }
 
             return MatchedPackagePaths.Num () > 0 ? true : false;
-
-            // Check if valid packages
-            // Return if any valid abc package
-            // bool bHasFoundValidAbc = false;
-            // FString PackageName;
-            //FPackageName::TryConvertFilenameToLongPackageName (PackageName, PackageName);
-            //bool &&bIsValidPackage = FPackageName::DoesPackageExist (PackageName) ? true : false;
-            //if (bIsValidPackage)
-            //    MatchedPackagePaths.Emplace(PackageName);
-
-            //bHasFoundValidAbc |= bIsValidPackage;
-            //return bHasFoundValidAbc;
         }
 
     }; // End Of Class
