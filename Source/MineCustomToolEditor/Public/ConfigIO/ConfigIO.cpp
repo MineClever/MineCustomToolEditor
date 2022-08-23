@@ -51,7 +51,7 @@ void FMineToolConfigLoader::OnStartupModule ()
         static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
         static float TimeCount = 0;
 
-        TimeCount += 5;
+        TimeCount += 1;
 
         if (ConfigSettings->bUseCustomDefaultCameraConfig && TimeCount >= ConfigSettings->ConfigForceGcRate)
         {
@@ -65,7 +65,7 @@ void FMineToolConfigLoader::OnStartupModule ()
     TSharedPtr<FTimerHandle> const SetNearClipTimerHandlePtr = MakeShareable (new FTimerHandle);
     TSharedPtr<FTimerHandle> const ForceGCTimerHandlePtr = MakeShareable (new FTimerHandle);
     GEditor->GetTimerManager ()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
-    GEditor->GetTimerManager ()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 5.0f, true, 30.0f);
+    GEditor->GetTimerManager ()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 1.0f, true, 30.0f);
 
 }
 
