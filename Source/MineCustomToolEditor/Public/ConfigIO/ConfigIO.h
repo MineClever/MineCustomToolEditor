@@ -22,6 +22,14 @@ public:
 	float ConfigStartUpNearClip = 0.001f;
 
 
+	// Set Force GC Timer
+	//////////////////////////////////////////////////////////////////////
+	///
+	UPROPERTY (EditAnywhere, config, Category = "MineForceGcRate")
+	bool bUseForceGc = false;
+	UPROPERTY (EditAnywhere, config, Category = "MineForceGcRate")
+	float ConfigForceGcRate = 30.0f;
+
 	// All Alembic Proxy Configures
 	///////////////////////////////////////////////
 

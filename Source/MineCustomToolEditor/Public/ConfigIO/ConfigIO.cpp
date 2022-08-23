@@ -45,9 +45,27 @@ void FMineToolConfigLoader::OnStartupModule ()
             GNearClippingPlane = ConfigSettings->ConfigStartUpNearClip;
         }
     };
+    
+    auto TimerToForceGC = [&]()
+    {
+        static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+        static float TimeCount = 0;
 
-    TSharedPtr<FTimerHandle> const TimerHandlePtr = MakeShareable (new FTimerHandle);
-    GEditor->GetTimerManager ()->SetTimer (*TimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0, true, 5.0);
+        TimeCount += 5;
+
+        if (ConfigSettings->bUseCustomDefaultCameraConfig && TimeCount >= ConfigSettings->ConfigForceGcRate)
+        {
+            GEngine->ForceGarbageCollection (true);
+            //FString::Printf (TEXT("Force Garbage Collection !!"));
+            TimeCount = 0;
+        }
+    };
+
+
+    TSharedPtr<FTimerHandle> const SetNearClipTimerHandlePtr = MakeShareable (new FTimerHandle);
+    TSharedPtr<FTimerHandle> const ForceGCTimerHandlePtr = MakeShareable (new FTimerHandle);
+    GEditor->GetTimerManager ()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
+    GEditor->GetTimerManager ()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 5.0f, true, 30.0f);
 
 }
 
