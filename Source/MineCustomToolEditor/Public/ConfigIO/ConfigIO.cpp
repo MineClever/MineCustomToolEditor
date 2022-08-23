@@ -55,7 +55,7 @@ void FMineToolConfigLoader::OnStartupModule ()
 
         if (ConfigSettings->bUseCustomDefaultCameraConfig && TimeCount >= ConfigSettings->ConfigForceGcRate)
         {
-            GEngine->ForceGarbageCollection (true);
+            GEditor->ForceGarbageCollection (true);
             //FString::Printf (TEXT("Force Garbage Collection !!"));
             TimeCount = 0;
         }
