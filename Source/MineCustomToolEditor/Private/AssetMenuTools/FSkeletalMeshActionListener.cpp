@@ -271,8 +271,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             {
                 bool bHasFoundMatchedMatId = false;
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
-                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString) != 0)
+                    if (!AllMats[MatId].MaterialInterface->IsValidLowLevel())
                         continue;
+                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString) != 0) continue;
                     else
                     {
                         RefMatID = MatId;
@@ -353,7 +354,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 continue;
 
                             // NOTE: Use main string to make slot mat name
-                            static uint16 RefMeshMatId;
+                            uint16 RefMeshMatId;
                             if (!LambdaFindMatIdByName (MatchedCurMainName, AllMats, RefMeshMatId))
                                 continue;
 
