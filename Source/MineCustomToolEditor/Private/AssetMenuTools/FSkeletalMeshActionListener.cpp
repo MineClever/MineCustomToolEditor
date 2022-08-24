@@ -336,9 +336,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         bool bShouldModify = false;
                         for (uint16 GeoCacheTrackId=0; GeoCacheTrackId < GeometryCacheTracksCount; ++GeoCacheTrackId)
                         {
-                            static FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
-                            static uint16 MatchedCurMatId = 0;
-                            static FString MatchedCurMainName = "UnknownMesh";
+                            FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
+                            uint16 MatchedCurMatId = 0;
+                            FString MatchedCurMainName = "UnknownMesh";
 
                             // NOTE: Found main mesh name and section index
                             static TArray<FString> RegexMatchResult;
