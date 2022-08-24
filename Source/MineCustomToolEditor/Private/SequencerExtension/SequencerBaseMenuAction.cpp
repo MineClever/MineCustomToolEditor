@@ -159,78 +159,77 @@ namespace FMineSequencerBaseMenuAction_Internal
 
                     /* One Object Binding may get several Object Components */
                     for (TWeakObjectPtr<> WeakObject : SequencerEditor->FindObjectsInCurrentSequence (Guid)) {
-                        UMeshComponent *MeshComponent = Cast<UMeshComponent> (WeakObject.Get ());
-                        if (MeshComponent) {
+                        const UMeshComponent *MeshComponent = Cast<UMeshComponent> (WeakObject.Get ());
+                        if (!IsValid(MeshComponent)) continue;
 
-                            // Find ABC Path
-                            TArray<FString> AbcPathArray;
+                        // Find ABC Path
+                        TArray<FString> AbcPathArray;
 
-                            // Package path for current component
-                            FString PackagePath;
+                        // Package path for current component
+                        FString PackagePath;
 
-                            if (!GetCurrentMeshComponentPackagePath (WeakObject, PackagePath)) continue;;
+                        if (!GetCurrentMeshComponentPackagePath (WeakObject, PackagePath)) continue;;
 
-                            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get Package path :\n %s ;\n"), *PackagePath);
+                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get Package path :\n %s ;\n"), *PackagePath);
 
-                            MakeRelativeAbcDirPath (PackagePath, AbcPathArray);
+                        MakeRelativeAbcDirPath (PackagePath, AbcPathArray);
 
-                            bool &&bHasFoundAbcPath = false;
-                            bool &&bHasFoundNotFlattenedTrack = false;
+                        bool &&bHasFoundAbcPath = false;
+                        bool &&bHasFoundNotFlattenedTrack = false;
 
-                            // try to find flattened abc in current Sequencer Named Directory
-                            UObject *MatchedAbcObj;
-                            if (HasFoundNotFlattenedClothAbcFile(LevelSequence, AbcPathArray, MatchedAbcObj))
-                                bHasFoundNotFlattenedTrack = true;
+                        // try to find flattened abc in current Sequencer Named Directory
+                        UObject *MatchedAbcObj;
+                        if (HasFoundNotFlattenedClothAbcFile (LevelSequence, AbcPathArray, MatchedAbcObj))
+                            bHasFoundNotFlattenedTrack = true;
 
-                            TArray<UMaterialInterface *> &&ComponentMatInterfaces = MeshComponent->GetMaterials ();
-                            TArray<FName> &&SlotNames = MeshComponent->GetMaterialSlotNames ();
+                        TArray<UMaterialInterface *> &&ComponentMatInterfaces = MeshComponent->GetMaterials ();
+                        TArray<FName> &&SlotNames = MeshComponent->GetMaterialSlotNames ();
 
-                            // Hidden Material when slot name same as GeoCache name or material show in not flattened GeoCach
-                            for (auto SlotName : SlotNames) {
-                                bool &&HasProxyTag = false;
+                        // Hidden Material when slot name same as GeoCache name or material show in not flattened GeoCach
+                        for (auto SlotName : SlotNames) {
+                            bool &&HasProxyTag = false;
 
-                                if (bHasFoundNotFlattenedTrack) {
-                                    bHasFoundAbcPath |= true;
-                                    auto const GeoCache = Cast<UGeometryCache> (MatchedAbcObj);
-                                    for (auto const GeoCacheMat : GeoCache->Materials) {
-                                        if (GeoCacheMat->GetFName () == ComponentMatInterfaces[MeshComponent->GetMaterialIndex (SlotName)]->GetFName ()) {
-                                            HasProxyTag |= true;
-                                            break;
-                                        }
+                            if (bHasFoundNotFlattenedTrack) {
+                                bHasFoundAbcPath |= true;
+                                auto const GeoCache = Cast<UGeometryCache> (MatchedAbcObj);
+                                for (auto const GeoCacheMat : GeoCache->Materials) {
+                                    if (GeoCacheMat->GetFName () == ComponentMatInterfaces[MeshComponent->GetMaterialIndex (SlotName)]->GetFName ()) {
+                                        HasProxyTag |= true;
+                                        break;
                                     }
-                                }
-                            	else {
-                                    static FString MatchedPackagePath;
-                                    for (auto AbcDirPath : AbcPathArray) {
-                                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
-                                        if (AbcDirPath.Find (LevelSequence->GetName ()) < 1) continue;
-
-                                        if (!FPaths::DirectoryExists (AbcDirPath)) continue;
-
-                                        // Make sure SlotNamed Abc Package path is valid, Or Skip
-                                        if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath)) {
-                                            HasProxyTag |= true;
-                                            bHasFoundAbcPath |= true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                /* If has found Proxy , add to indexArray */
-                                if (HasProxyTag) {
-                                    CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid,
-                                        MeshComponent->GetMaterialIndex (SlotName), SlotName, MaterialObject);
                                 }
                             }
+                            else {
+                                static FString MatchedPackagePath;
+                                for (auto AbcDirPath : AbcPathArray) {
+                                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+                                    if (AbcDirPath.Find (LevelSequence->GetName ()) < 1) continue;
 
-                            if (!bHasFoundAbcPath)
-                            {
-                                FText &&Message = FText::Format (
-                                    FText::FromString("Can not find any matched Alembic directory path for\n{0}\n"),
-                                    FText::FromString(PackagePath));
+                                    if (!FPaths::DirectoryExists (AbcDirPath)) continue;
 
-                                FMessageDialog::Open (EAppMsgType::Ok, Message);
+                                    // Make sure SlotNamed Abc Package path is valid, Or Skip
+                                    if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath)) {
+                                        HasProxyTag |= true;
+                                        bHasFoundAbcPath |= true;
+                                        break;
+                                    }
+                                }
+                            }
+                            /* If has found Proxy , add to indexArray */
+                            if (HasProxyTag) {
+                                CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid,
+                                    MeshComponent->GetMaterialIndex (SlotName), SlotName, MaterialObject);
                             }
                         }
+
+                        if (!bHasFoundAbcPath) {
+                            FText &&Message = FText::Format (
+                                FText::FromString ("Can not find any matched Alembic directory path for\n{0}\n"),
+                                FText::FromString (PackagePath));
+
+                            FMessageDialog::Open (EAppMsgType::Ok, Message);
+                        }
+
                     } // End Traverse Objects of current guid binding
 
                 }// End Traverse BindingsGuid
