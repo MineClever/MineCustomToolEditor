@@ -162,8 +162,6 @@ namespace FMineSequencerBaseMenuAction_Internal
                         UMeshComponent *MeshComponent = Cast<UMeshComponent> (WeakObject.Get ());
                         if (MeshComponent) {
 
-                            TArray<FName> SlotNames = MeshComponent->GetMaterialSlotNames ();
-
                             // Find ABC Path
                             TArray<FString> AbcPathArray;
 
@@ -176,21 +174,33 @@ namespace FMineSequencerBaseMenuAction_Internal
 
                             MakeRelativeAbcDirPath (PackagePath, AbcPathArray);
 
-                            bool &&bFoundAbcPath = false;
-                            bool &&FoundFlattenedTrack = false;
-                            
+                            bool &&bHasFoundAbcPath = false;
+                            bool &&bHasFoundNotFlattenedTrack = false;
 
-                            // TODO: try to find flattened abc in current Sequencer Named Directory
+                            // try to find flattened abc in current Sequencer Named Directory
                             UObject *MatchedAbcObj;
-                            if (HasFoundFlattenedClothAbcFile(LevelSequence, AbcPathArray, MatchedAbcObj))
-                                FoundFlattenedTrack = true;
+                            if (HasFoundNotFlattenedClothAbcFile(LevelSequence, AbcPathArray, MatchedAbcObj))
+                                bHasFoundNotFlattenedTrack = true;
 
+                            TArray<UMaterialInterface *> &&ComponentMatInterfaces = MeshComponent->GetMaterials ();
+                            TArray<FName> &&SlotNames = MeshComponent->GetMaterialSlotNames ();
+
+                            // Hidden Material when slot name same as GeoCache name or material show in not flattened GeoCach
                             for (auto SlotName : SlotNames) {
                                 bool &&HasProxyTag = false;
-                                static FString MatchedPackagePath;
-                                // IF not a Found FlattenedTrack
-                                if (!FoundFlattenedTrack)
-                                {
+
+                                if (bHasFoundNotFlattenedTrack) {
+                                    bHasFoundAbcPath |= true;
+                                    auto const GeoCache = Cast<UGeometryCache> (MatchedAbcObj);
+                                    for (auto const GeoCacheMat : GeoCache->Materials) {
+                                        if (GeoCacheMat->GetFName () == ComponentMatInterfaces[MeshComponent->GetMaterialIndex (SlotName)]->GetFName ()) {
+                                            HasProxyTag |= true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            	else {
+                                    static FString MatchedPackagePath;
                                     for (auto AbcDirPath : AbcPathArray) {
                                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
                                         if (AbcDirPath.Find (LevelSequence->GetName ()) < 1) continue;
@@ -199,18 +209,12 @@ namespace FMineSequencerBaseMenuAction_Internal
 
                                         // Make sure SlotNamed Abc Package path is valid, Or Skip
                                         if (HasFoundClothAbcFile (SlotName, AbcDirPath, MatchedPackagePath)) {
-                                            HasProxyTag = true;
-                                            bFoundAbcPath = bFoundAbcPath | true;
+                                            HasProxyTag |= true;
+                                            bHasFoundAbcPath |= true;
                                             break;
                                         }
                                     }
                                 }
-                                // Found FlattenedTrack
-                            	else
-                                {
-	                                
-                                }
-
                                 /* If has found Proxy , add to indexArray */
                                 if (HasProxyTag) {
                                     CreateTrackForMeshElement (MovieScene, SequencerEditor, Guid,
@@ -218,7 +222,7 @@ namespace FMineSequencerBaseMenuAction_Internal
                                 }
                             }
 
-                            if (!bFoundAbcPath)
+                            if (!bHasFoundAbcPath)
                             {
                                 FText &&Message = FText::Format (
                                     FText::FromString("Can not find any matched Alembic directory path for\n{0}\n"),
@@ -296,7 +300,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             FString TempDirPath;
             FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
 
-            // TODO: Read from config file
+            //Read from config file
             auto const ConfigSettings = LoadConfig ();
             FString const ConfigAlembicPathRule = 
                 ConfigSettings->bUseCustomProxyConfig ?
@@ -312,45 +316,77 @@ namespace FMineSequencerBaseMenuAction_Internal
             }
         }
 
-        static bool HasFoundFlattenedClothAbcFile (ULevelSequence* const Sequence, const TArray<FString> &AbcDirPathArray, UObject* &MatchedAbcObj)
+        static bool HasFoundNotFlattenedClothAbcFile (const ULevelSequence* const Sequence, const TArray<FString> &AbcDirPathArray, UObject* &MatchedAbcAsset)
         {
-            //Read from config file
+            // Read from config file
             auto const ConfigSettings = LoadConfig ();
+
+            // Disable! Skip!
+            if (!ConfigSettings->bEnableNotFlattenClothMatch) return false;
+
             FString const ConfigSubPathRule =
                 ConfigSettings->bUseCustomProxyConfig ?
                 ConfigSettings->ConfigAlembicClothSubDirMatchKey : TEXT ("Cloth");
 
             bool const bUseSequencerDirName = ConfigSettings->bUseSequencerDirectoryNameToMatch;
-            FAssetRegistryModule *const AssetRegistryModule = FModuleManager::Get().GetModulePtr<FAssetRegistryModule> ("AssetRegistry");
-            IAssetRegistry &AssetRegistry = AssetRegistryModule->Get ();
-            FARFilter AMFilter;
-            AMFilter.ClassNames.Add (UGeometryCache::StaticClass ()->GetFName ());
-            TArray<FAssetData> CurrentExistingAssets;
 
             FName AbcDirMatchToSequencerName;
-            if (bUseSequencerDirName) // TODO: by Directory name of current sequencer
+            if (bUseSequencerDirName) // by Directory name of current sequencer
             {
-                AbcDirMatchToSequencerName = FName (TEXT("None"));
-            }else // TODO: by current sequencer name
+                AbcDirMatchToSequencerName = FName(FPaths::GetPath(Sequence->GetPathName ()));
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Set Sequencer search name as  %s"), *AbcDirMatchToSequencerName.ToString());
+            }else // by current sequencer name
             {
-                AbcDirMatchToSequencerName = FName (TEXT ("None"));
+                AbcDirMatchToSequencerName = Sequence->GetFName();
             }
 
-            // TODO: Find matched dir
+            // Help to find matched Sequencer named dir
             auto HasFoundMatchedSequencerAbcDir = [&](const FString &AbcDirPath) ->bool
         	{
-                bool bHasFoundSeqAbc = false;
-                if (AbcDirPath.Find(AbcDirMatchToSequencerName.ToString()))
-                {
-                    // TODO: Find not flattened abc
-                    AMFilter.PackagePaths.Empty ();
-                    AMFilter.PackagePaths.Add (FName (AbcDirPath));
-                    bHasFoundSeqAbc = true;
-                }
-                return bHasFoundSeqAbc;
+                return AbcDirPath.Find (AbcDirMatchToSequencerName.ToString (),
+                    ESearchCase::IgnoreCase,ESearchDir::FromEnd) ? true : false;
             };
 
-            return false;
+            bool &&bFoundAbcAssetStatus = false;
+
+            // Found all .uasset under directory of sequencer name matched
+            TArray<FString> MatchedPackagePaths;
+            for (auto const AbcDirPath : AbcDirPathArray) {
+                MatchedPackagePaths.Empty ();
+	            if (!HasFoundMatchedSequencerAbcDir(AbcDirPath)) continue;
+                bFoundAbcAssetStatus = true;
+                FString &&MatchedDirPath = FPaths::ConvertRelativePathToFull(AbcDirPath / ConfigSubPathRule);
+                // Find all package name under current AnimCache Directory
+                IFileManager::Get ().FindFiles (MatchedPackagePaths, *MatchedDirPath, TEXT ("uasset"));
+                bFoundAbcAssetStatus |= MatchedPackagePaths.Num () > 0 ? true : false;
+                break;
+            }
+
+            if (!bFoundAbcAssetStatus) return false;
+
+            bFoundAbcAssetStatus = false;
+            for (auto const MatchedPackagePath : MatchedPackagePaths) {
+                // Load Asset to UObject to modify
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Check Package @ %s"), *MatchedPackagePath);
+                MatchedAbcAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+                if (!IsValid (MatchedAbcAsset)) continue;
+
+                // Check if abc type
+                auto const GeoCache = Cast<UGeometryCache> (MatchedAbcAsset);
+                if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
+                    UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache, SKIP\n"), *MatchedAbcAsset->GetFullName ());
+                    continue;
+                }
+
+                // NOTE: Get Current Geometry Materials && Tracks
+                TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
+                if (GeoCacheTracks.Num()<1) continue;
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Unflattened Abc Package @ %s"), *MatchedPackagePath);
+                bFoundAbcAssetStatus = true;
+            }
+
+            // Return status
+            return bFoundAbcAssetStatus;
         }
 
         static bool HasFoundClothAbcFile (const FName &MatSlotName, const FString &AbcDirPath, FString &MatchedPackagePath)

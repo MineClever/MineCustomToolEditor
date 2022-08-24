@@ -32,6 +32,11 @@ public:
 
 	// All Alembic Proxy Configures
 	///////////////////////////////////////////////
+	///
+
+	UPROPERTY (EditAnywhere, config, AdvancedDisplay, Category = "MineAlembicProxyMatch")
+	bool bEnableNotFlattenClothMatch = true;
+
 	UPROPERTY (EditAnywhere, config, AdvancedDisplay, Category = "MineAlembicProxyMatch")
 	bool bUseSequencerDirectoryNameToMatch = false;
 
