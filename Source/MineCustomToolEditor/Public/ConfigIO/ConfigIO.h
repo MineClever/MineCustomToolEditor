@@ -47,6 +47,9 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "MineAlembicProxyMatch")
 	FString ConfigAlembicPathRule = TEXT("Animations/Alembic");
 
+	UPROPERTY (EditAnywhere, config, Category = "MineAlembicProxyMatch")
+	FString ConfigAlembicAnimCachePathRule = TEXT ("Animations/Alembic");
+
 	UPROPERTY(EditAnywhere, config, Category = "MineAlembicProxyMatch")
 	FString ConfigAlembicProxyMatPath = TEXT(
 			"/Game/PalTrailer/MaterialLibrary/Base/Charactor/CFX_Material/Mat_Daili_Inst");

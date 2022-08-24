@@ -243,7 +243,11 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 // Find Mat by MatIndex
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
                     bHasFoundSamePath = AllMats[MatId].MaterialInterface->GetPathName () == CurrentMatPath;
-                    if (bHasFoundSamePath) break;
+                    if (bHasFoundSamePath)
+                    {
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Mat Matched @ MatID %d \n"), *CurrentMatPath, MatId);
+                        break;
+                    }
                 }
                 return bHasFoundSamePath;
             };
@@ -258,6 +262,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 while (Matcher.FindNext ()) {
                     Result.Emplace (Matcher.GetCaptureGroup (1));
                     Result.Emplace (Matcher.GetCaptureGroup (2));
+                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Regex Matched :%s @ %s \n"), *Str, *Result[0], *Result[1]);
                 }
                 return Result.Num () == 0 ? false : true;
             };
@@ -286,7 +291,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                 // Generate abc dir path
                 TArray<FString> AbcPathArray;
-                FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath (CurrentPathName, AbcPathArray);
+                MakeRelativeAbcDirPath (CurrentPathName, AbcPathArray);
 
                 // Found Materials
                 TArray<FSkeletalMaterial> AllMats = CurrentMesh->GetMaterials ();
@@ -331,9 +336,9 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         bool bShouldModify = false;
                         for (uint16 GeoCacheTrackId=0; GeoCacheTrackId < GeometryCacheTracksCount; ++GeoCacheTrackId)
                         {
-                            static FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
-                            static uint16 MatchedCurMatId = 0;
-                            static FString MatchedCurMainName = "UnknownMesh";
+                            FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
+                            uint16 MatchedCurMatId = 0;
+                            FString MatchedCurMainName = "UnknownMesh";
 
                             // NOTE: Found main mesh name and section index
                             static TArray<FString> RegexMatchResult;
@@ -400,6 +405,27 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             }
 
             return MatchedPackagePaths.Num () > 0 ? true : false;
+        }
+
+        static void MakeRelativeAbcDirPath (const FString &MatPackagePath, TArray<FString> &AbcPathArray)
+        {
+            AbcPathArray.Empty ();
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            FString const ConfigAlembicPathRule =
+                ConfigSettings->bUseCustomProxyConfig ?
+                ConfigSettings->ConfigAlembicAnimCachePathRule :
+                TEXT ("Animations/Alembic");
+
+            // Path @ [CurrentAssetDir]/Animations/Alembic
+            FString TempDirPath;
+            FPackageName::TryConvertLongPackageNameToFilename (MatPackagePath, TempDirPath);
+            TempDirPath = FPaths::GetPath (TempDirPath) / ConfigAlembicPathRule;
+            UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Try to found all Alembic Diectory @ %s"), *TempDirPath);
+            if (FPaths::DirectoryExists (TempDirPath)) {
+                FDirectoryVisitor Visitor;
+                FPlatformFileManager::Get ().GetPlatformFile ().IterateDirectory (*TempDirPath, Visitor);
+                AbcPathArray = Visitor.DirectoryArray;
+            }
         }
 
     }; // End Of Class
