@@ -32,6 +32,8 @@ public:
 
 	// All Alembic Proxy Configures
 	///////////////////////////////////////////////
+	UPROPERTY (EditAnywhere, config, AdvancedDisplay, Category = "MineAlembicProxyMatch")
+	bool bUseSequencerDirectoryNameToMatch = false;
 
 	UPROPERTY(EditAnywhere, config, Category = "MineAlembicProxyMatch")
 	bool bUseCustomProxyConfig = false;
