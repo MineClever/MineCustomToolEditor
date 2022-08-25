@@ -357,6 +357,13 @@ namespace FMineSequencerBaseMenuAction_Internal
                 FString &&MatchedDirPath = FPaths::ConvertRelativePathToFull(AbcDirPath / ConfigSubPathRule);
                 // Find all package name under current AnimCache Directory
                 IFileManager::Get ().FindFiles (MatchedPackagePaths, *MatchedDirPath, TEXT ("uasset"));
+
+                // NOTE: make fully path
+                for (int PathId = 0; PathId < MatchedPackagePaths.Num (); ++PathId) {
+                    //PackageName = FPaths::ConvertRelativePathToFull (MatchedDirPath, PackageName);
+                    FPackageName::TryConvertFilenameToLongPackageName ((MatchedDirPath / MatchedPackagePaths[PathId]), MatchedPackagePaths[PathId]);
+                }
+
                 bFoundAbcAssetStatus |= MatchedPackagePaths.Num () > 0 ? true : false;
                 break;
             }

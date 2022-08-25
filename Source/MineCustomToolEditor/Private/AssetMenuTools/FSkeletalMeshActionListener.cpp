@@ -253,16 +253,17 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             };
 
             // NOTE: Use regex to search main ruled name && material section index in cache
-            // "^(.*?)(?:Shape)_(\d?)$" match "GreenOneShape_0" <- Alembic Stream-able Track Name
+            // "^.*?_(.*?)\\d?(?:Shape)_(\\d?)$" match "Abc_GreenOneShape_0" <- Alembic Stream-able Track Name
             // Get $1 == "GreenOne", $2 == "0"
             auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
-                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(.*?)(?:Shape)_(\\d?)$"));
+                // TODO: Should fix use string finder
+                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)Shape_(\\d)$"));
                 FRegexMatcher Matcher (Patten, Str);
                 Result.Empty ();
                 while (Matcher.FindNext ()) {
                     Result.Emplace (Matcher.GetCaptureGroup (1));
                     Result.Emplace (Matcher.GetCaptureGroup (2));
-                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Regex Matched :%s @ %s \n"), *Str, *Result[0], *Result[1]);
+                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatChecker Input : %s ; Regex Matched :%s @ %s \n"), *Str, *Result[0], *Result[1]);
                 }
                 return Result.Num () == 0 ? false : true;
             };
@@ -273,9 +274,10 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
                     if (!AllMats[MatId].MaterialInterface->IsValidLowLevel())
                         continue;
-                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString) != 0) continue;
+                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) < 0) continue;
                     else
                     {
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Input : %s ; Mat Matched @ MatID %d \n"), *NameString, MatId);
                         RefMatID = MatId;
                         bHasFoundMatchedMatId = true;
                     	break;
@@ -326,6 +328,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
                         TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
                         int32 &&GeometryCacheTracksCount = GeoCacheTracks.Num ();
+                        auto &&GeoCacheMatCount = GeoCacheMatArray.Num ();
 
                         // NOTE: Skip when Flattened track or no track here
                         if (GeometryCacheTracksCount < 1 || GeoCacheTracks[0]->GetFName() == FName(TEXT("Flattened_Track")))
@@ -346,7 +349,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             if (LambdaRegexMatchShape (CurrentTrackName, RegexMatchResult))
                             {
                                 MatchedCurMainName = RegexMatchResult[0];
-                                MatchedCurMatId = FCString::Atoi (*RegexMatchResult[1]);
+                                // MatchedCurMatId = FCString::Atoi (*RegexMatchResult[1]);
+                                MatchedCurMatId = GeoCacheTrackId > GeoCacheMatCount ? GeoCacheMatCount : GeoCacheTrackId;
                             } else continue;
 
                             // NOTE: Check if Already Material has been set
