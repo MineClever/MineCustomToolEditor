@@ -194,6 +194,7 @@ namespace FMineSequencerBaseMenuAction_Internal
                                 auto const GeoCache = Cast<UGeometryCache> (MatchedAbcObj);
                                 for (auto const GeoCacheMat : GeoCache->Materials) {
                                     if (GeoCacheMat->GetFName () == ComponentMatInterfaces[MeshComponent->GetMaterialIndex (SlotName)]->GetFName ()) {
+                                        UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get MatchedAbc Mat name : %s;"), *GeoCacheMat->GetName());
                                         HasProxyTag |= true;
                                         break;
                                     }
