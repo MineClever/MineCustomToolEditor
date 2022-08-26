@@ -394,7 +394,7 @@ namespace FMineSequencerBaseMenuAction_Internal
                 TArray<UGeometryCacheTrack *> GeoCacheTracks = GeoCache->Tracks;
                 if (GeoCacheTracks.Num()<1) continue;
                 UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Unflattened Abc Package @ %s"), *MatchedPackagePath);
-                bFoundAbcAssetStatus = true;
+                bFoundAbcAssetStatus |= true;
             }
 
             // Return status
