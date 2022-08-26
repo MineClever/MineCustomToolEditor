@@ -192,8 +192,13 @@ namespace FMineSequencerBaseMenuAction_Internal
                             if (bHasFoundNotFlattenedTrack) {
                                 bHasFoundAbcPath |= true;
                                 auto const GeoCache = Cast<UGeometryCache> (MatchedAbcObj);
+
+                                auto &&TempMatId = MeshComponent->GetMaterialIndex (SlotName);
+                                FName&& TempMatName = ComponentMatInterfaces[TempMatId]->GetFName();
+
                                 for (auto const GeoCacheMat : GeoCache->Materials) {
-                                    if (GeoCacheMat->GetFName () == ComponentMatInterfaces[MeshComponent->GetMaterialIndex (SlotName)]->GetFName ()) {
+
+                                    if (GeoCacheMat->GetFName () == TempMatName) {
                                         UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Name Finder Get MatchedAbc Mat name : %s;"), *GeoCacheMat->GetName());
                                         HasProxyTag |= true;
                                         break;
