@@ -245,7 +245,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     bHasFoundSamePath = AllMats[MatId].MaterialInterface->GetPathName () == CurrentMatPath;
                     if (bHasFoundSamePath)
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Mat Matched @ MatID %d \n"), *CurrentMatPath, MatId);
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Mat Matched @ MatID %d ;Same as current setted one\n"), *CurrentMatPath, MatId);
                         break;
                     }
                 }
@@ -271,17 +271,20 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID) -> bool
             {
                 bool bHasFoundMatchedMatId = false;
+                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
                     if (!AllMats[MatId].MaterialInterface->IsValidLowLevel())
                         continue;
+
                     FString &&CurMatInterfaceName = AllMats[MatId].MaterialInterface->GetName();
                     FString &&CurMatSlotName = AllMats[MatId].MaterialSlotName.ToString ();
-
+                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find with interface name :%s, matslot name :%s\n"), *CurMatInterfaceName, *CurMatSlotName);
+                    
                     if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) < 0)
                         continue;
                     else
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Input : %s ; Mat Matched @ MatID %d \n"), *NameString, MatId);
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat Interface Mode; Mat Matched @ MatID %d \n"), *NameString, MatId);
                         RefMatID = MatId;
                         bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
                         /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
@@ -298,7 +301,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             continue;
                         else
                         {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Input : %s ; Mat Matched @ MatID %d \n"), *NameString, MatId);
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
                             RefMatID = MatId;
                             bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
                             /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
