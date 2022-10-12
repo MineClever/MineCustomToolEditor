@@ -257,7 +257,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             // Get $1 == "GreenOne", $2 == "0"
             auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
                 // TODO: Should fix use string finder
-                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)Shape_(\\d)$"));
+                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)Shape_(\\d*?)$"));
                 FRegexMatcher Matcher (Patten, Str);
                 Result.Empty ();
                 while (Matcher.FindNext ()) {
@@ -268,19 +268,45 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 return Result.Num () == 0 ? false : true;
             };
 
-            auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID)
+            auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID) -> bool
             {
                 bool bHasFoundMatchedMatId = false;
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
                     if (!AllMats[MatId].MaterialInterface->IsValidLowLevel())
                         continue;
-                    if (AllMats[MatId].MaterialInterface->GetName ().Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) < 0) continue;
+                    FString &&CurMatInterfaceName = AllMats[MatId].MaterialInterface->GetName();
+                    FString &&CurMatSlotName = AllMats[MatId].MaterialSlotName.ToString ();
+
+                    if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) < 0)
+                        continue;
                     else
                     {
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Input : %s ; Mat Matched @ MatID %d \n"), *NameString, MatId);
                         RefMatID = MatId;
-                        bHasFoundMatchedMatId = true;
-                    	break;
+                        bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                        /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
+                        if (CurMatInterfaceName.StartsWith(TEXT("ABC_")))
+                        {
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
+                            break;
+                        }
+                    }
+
+                    if (!bHasFoundMatchedMatId)
+                    {
+                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0)
+                            continue;
+                        else
+                        {
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Input : %s ; Mat Matched @ MatID %d \n"), *NameString, MatId);
+                            RefMatID = MatId;
+                            bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                            /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
+                            if (CurMatInterfaceName.StartsWith (TEXT ("ABC_"))) {
+                                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
+                                break;
+                            }
+                        }
                     }
                 }
                 return bHasFoundMatchedMatId;
@@ -490,6 +516,26 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             } // End of Iterator Of Assets
             UPackageTools::SavePackagesForObjects (ObjectToSave);
         } // End Of ProcessAssets
+
+        void QuerySubDirAssets (TArray<FString> &MatDirPathArray)
+        {
+            // NOTE: Return, If not valid FirstLayer Material Dir
+            if (!MatDirPathArray.IsValidIndex (0)) return;
+            auto MatDirPathArrayCopy = TArray<FString> (MatDirPathArray); // NOTE: Make a copy
+
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings> ();
+            FString const ConfigMatPathRule =
+                ConfigSettings->bUseCustomMaterialBindConfig ?
+                ConfigSettings->ConfigMaterialDirectoryRule :
+                TEXT ("material,mat,materials");
+
+            // NOTE: For each sub dir in current first layer dirs, if it is valid.
+            for (auto CurMatDir : MatDirPathArrayCopy)
+            {
+
+            }
+
+        }
 
     }; // End Of Class
 
