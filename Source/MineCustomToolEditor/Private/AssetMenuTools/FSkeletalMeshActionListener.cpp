@@ -257,7 +257,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             // Get $1 == "GreenOne", $2 == "0"
             auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
                 // TODO: Should fix use string finder
-                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)(?:\\d*?)?Shape_(\\d*?)$"));
+                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)(?:_\\d*?)?Shape_(\\d*?)$"));
                 FRegexMatcher Matcher (Patten, Str);
                 Result.Empty ();
                 while (Matcher.FindNext ()) {
@@ -306,12 +306,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat Interface Mode; Mat Matched @ MatID %d \n"), *NameString, MatId);
                         RefMatID = MatId;
                         bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
-                        /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
-                        //if (CurMatInterfaceName.StartsWith(TEXT("ABC_")))
-                        //{
-                        //    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
-                        //    break;
-                        //}
                     }
                     /* NOTE: Check with current Material Slot name */
                     if (!bHasFoundMatchedMatId)
@@ -323,11 +317,6 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
                             RefMatID = MatId;
                             bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
-                            /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
-                            //if (CurMatInterfaceName.StartsWith (TEXT ("ABC_"))) {
-                            //    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
-                            //    break;
-                            //}
                         }
                     }
                 }
