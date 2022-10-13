@@ -257,7 +257,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             // Get $1 == "GreenOne", $2 == "0"
             auto LambdaRegexMatchShape = [&](const FString &Str, TArray<FString> &Result)->bool {
                 // TODO: Should fix use string finder
-                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)Shape_(\\d*?)$"));
+                static const FRegexPattern Patten = FRegexPattern(TEXT ("^(?:.*?_)?(.*?)(?:\\d*?)?Shape_(\\d*?)$"));
                 FRegexMatcher Matcher (Patten, Str);
                 Result.Empty ();
                 while (Matcher.FindNext ()) {
