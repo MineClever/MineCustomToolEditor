@@ -279,8 +279,13 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     FString &&CurMatInterfaceName = AllMats[MatId].MaterialInterface->GetName();
                     FString &&CurMatSlotName = AllMats[MatId].MaterialSlotName.ToString ();
                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find with interface name :%s, matslot name :%s\n"), *CurMatInterfaceName, *CurMatSlotName);
+                    if (CurMatInterfaceName.EndsWith("_daili") || CurMatSlotName.EndsWith("_daili"))
+                    {
+                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Name [%s] with Proxy name, skip! \n"), *NameString);
+                        continue;
+                    }
                     
-                    if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) > 0 && (!CurMatInterfaceName.EndsWith ("daili")))
+                    if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) > 0)
                     {
 
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat Interface Mode; Mat Matched @ MatID %d \n"), *NameString, MatId);
@@ -297,7 +302,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     if (!bHasFoundMatchedMatId)
                     {
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Not found by Mat Interface Mode , using Mat SlotName Mode\n"));
-                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0 || (CurMatInterfaceName.EndsWith ("daili")))
+                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0)
                             continue;
                         else
                         {
