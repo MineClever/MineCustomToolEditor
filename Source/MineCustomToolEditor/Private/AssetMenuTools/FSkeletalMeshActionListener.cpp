@@ -272,19 +272,34 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             {
                 bool bHasFoundMatchedMatId = false;
                 UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
+
+                TArray<FString> IgnoreKeywords = { TEXT("_DaiLi"), TEXT("_Proxy")};
+
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+
+                    /* NOTE: Ready for process with names */
                     if (!AllMats[MatId].MaterialInterface->IsValidLowLevel())
                         continue;
 
                     FString &&CurMatInterfaceName = AllMats[MatId].MaterialInterface->GetName();
                     FString &&CurMatSlotName = AllMats[MatId].MaterialSlotName.ToString ();
                     UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find with interface name :%s, matslot name :%s\n"), *CurMatInterfaceName, *CurMatSlotName);
-                    if (CurMatInterfaceName.EndsWith("_daili") || CurMatSlotName.EndsWith("_daili"))
+
+
+                    /* NOTE: Skip with IgnoreKeywords */
+                    bool &&bSkipWithIgnoreKeyword = false;
+                    for (const FString Keyword : IgnoreKeywords)
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Name [%s] with Proxy name, skip! \n"), *NameString);
-                        continue;
+                        if (CurMatInterfaceName.EndsWith (Keyword) || CurMatSlotName.EndsWith (Keyword)) {
+                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Name [%s] with Proxy name, skip! \n"), *NameString);
+                            bSkipWithIgnoreKeyword = true;
+                            break;
+                        }
                     }
-                    
+                    if ((bSkipWithIgnoreKeyword)) continue;
+
+
+                    /* NOTE: Check with current Material Interface name */
                     if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) > 0)
                     {
 
@@ -292,28 +307,27 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         RefMatID = MatId;
                         bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
                         /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
-                        if (CurMatInterfaceName.StartsWith(TEXT("ABC_")))
-                        {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
-                            break;
-                        }
+                        //if (CurMatInterfaceName.StartsWith(TEXT("ABC_")))
+                        //{
+                        //    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
+                        //    break;
+                        //}
                     }
-
+                    /* NOTE: Check with current Material Slot name */
                     if (!bHasFoundMatchedMatId)
                     {
                         UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Not found by Mat Interface Mode , using Mat SlotName Mode\n"));
-                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0)
-                            continue;
+                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0) continue;
                         else
                         {
                             UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
                             RefMatID = MatId;
                             bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
                             /* NOTE: Try to find all material, if start with "ABC_", just use it. or we find last matched */
-                            if (CurMatInterfaceName.StartsWith (TEXT ("ABC_"))) {
-                                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
-                                break;
-                            }
+                            //if (CurMatInterfaceName.StartsWith (TEXT ("ABC_"))) {
+                            //    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Start With \"ABC_\", skip loop"));
+                            //    break;
+                            //}
                         }
                     }
                 }
@@ -388,8 +402,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                             } else continue;
 
                             // NOTE: Check if Already Material has been set
-                            if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
-                                continue;
+                            //if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
+                            //    continue;
 
                             // NOTE: Use main string to make slot mat name
                             uint16 RefMeshMatId;
