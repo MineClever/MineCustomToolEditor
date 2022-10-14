@@ -225,6 +225,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
     class FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {
+    private:
+        bool &&bDebugCls = false;
 
     public:
         FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots () :TAssetsProcessorFormSelection_Builder<LocAssetType> (false)
@@ -245,7 +247,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     bHasFoundSamePath = AllMats[MatId].MaterialInterface->GetPathName () == CurrentMatPath;
                     if (bHasFoundSamePath)
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Mat Matched @ MatID %d ;Same as current setted one\n"), *CurrentMatPath, MatId);
+                        if (bDebugCls) UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Input : %s ; Mat Matched @ MatID %d ;Same as current setted one\n"), *CurrentMatPath, MatId);
                         break;
                     }
                 }
@@ -263,7 +265,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                 while (Matcher.FindNext ()) {
                     Result.Emplace (Matcher.GetCaptureGroup (1));
                     Result.Emplace (Matcher.GetCaptureGroup (2));
-                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatChecker Input : %s ; Regex Matched :%s @ %s \n"), *Str, *Result[0], *Result[1]);
+                    if (bDebugCls) UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatChecker Input : %s ; Regex Matched :%s @ %s \n"), *Str, *Result[0], *Result[1]);
                 }
                 return Result.Num () == 0 ? false : true;
             };
@@ -271,7 +273,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID) -> bool
             {
                 bool bHasFoundMatchedMatId = false;
-                UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
+                if (bDebugCls) UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
 
                 TArray<FString> IgnoreKeywords = { TEXT("_DaiLi"), TEXT("_Proxy")};
 
@@ -390,14 +392,18 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                                 MatchedCurMatId = GeoCacheTrackId > GeoCacheMatCount ? GeoCacheMatCount : GeoCacheTrackId;
                             } else continue;
 
-                            // NOTE: Check if Already Material has been set
-                            //if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
-                            //    continue;
 
                             // NOTE: Use main string to make slot mat name
                             uint16 RefMeshMatId;
                             if (!LambdaFindMatIdByName (MatchedCurMainName, AllMats, RefMeshMatId))
                                 continue;
+
+                            // NOTE: Check if Already Material has been set
+                            //if (LambdaCheckIfSameMat (GeoCacheMatArray[MatchedCurMatId]->GetPathName (), AllMats))
+                            //    continue;
+                            if (GeoCacheMatArray[MatchedCurMatId]->GetPathName () == AllMats[RefMeshMatId].MaterialInterface->GetPathName())
+                                continue;
+
 
                             GeoCacheMatArray[MatchedCurMatId] = AllMats[RefMeshMatId].MaterialInterface;
                             bShouldModify = true;
