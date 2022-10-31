@@ -3,7 +3,8 @@
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
 #include "AssetCreateHelper/FMinePackageToObjectHelper.hpp"
 #include "ConfigIO/ConfigIO.h"
-
+#include "Internationalization/Regex.h"
+#include "AssetMenuTools/FSkeletalMeshActionListener.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
@@ -214,6 +215,98 @@ public:
 };
 
 
+class FAssetsProcessorFormSelection_UStaticMesh_AbcClothBindToMatSlots : public TAssetsProcessorFormSelection_Builder<UStaticMesh>
+{
+public:
+
+
+	FAssetsProcessorFormSelection_UStaticMesh_AbcClothBindToMatSlots () :TAssetsProcessorFormSelection_Builder<UStaticMesh> (false)
+	{
+		// Without SourceControl init
+	}
+
+	virtual void ProcessAssets (TArray<UStaticMesh *> &Assets) override
+	{
+        #define MACRO_MAKE_RELATIVE_ABC_DIR_PATH FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::MakeRelativeAbcDirPath
+        #define MACRO_HAS_FOUND_CLOTH_ABC_FILE FSkeletalMeshProcessor_AutoSet_Internal::FSkeletalMeshProcessor_AbcClothBindToMatSlots::HasFoundClothAbcFile
+
+		TArray<UObject *> ObjectToSave;
+		bool const IsSourceControlValid = FAssetSourceControlHelper::IsSourceControlAvailable ();
+
+		for (auto MeshIterator = Assets.CreateConstIterator (); MeshIterator; ++MeshIterator) {
+
+			// Start job!
+			auto const CurrentMesh = *MeshIterator;
+			UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Current Target is : %s"), *CurrentMesh->GetPathName ());
+
+			// Generate abc dir path
+			TArray<FString> AbcPathArray;
+			MACRO_MAKE_RELATIVE_ABC_DIR_PATH (CurrentMesh->GetPathName (), AbcPathArray);
+
+			// Found Materials
+			TArray<FStaticMaterial> AllMats = CurrentMesh->GetStaticMaterials ();
+
+			// Find Mat by MatIndex
+			for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
+				FName CurMatSlotName = AllMats[MatId].MaterialSlotName;
+				// Traversal all Alembic Sub-Path
+				for (auto AbcDirPath : AbcPathArray) {
+					// UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Searching @ %s"), *AbcDirPath);
+					if (!FPaths::DirectoryExists (AbcDirPath)) continue;
+
+					FString MatchedPackagePath;
+					// Make sure SlotNamed Abc Package path is valid, Or Skip
+					if (!MACRO_HAS_FOUND_CLOTH_ABC_FILE (CurMatSlotName, AbcDirPath, MatchedPackagePath))
+						continue;
+
+					// Load Asset to UObject to modify
+					UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Found Matched Package @ %s"), *MatchedPackagePath);
+					UObject *const AbcAsset = MinePackageLoadHelper::LoadAsset (MatchedPackagePath);
+					if (!IsValid (AbcAsset)) continue;
+
+					// Check if abc type
+					auto const GeoCache = Cast<UGeometryCache> (AbcAsset);
+					if (GeoCache == nullptr || GeoCache->StaticClass ()->GetFName () != UGeometryCache::StaticClass ()->GetFName ()) {
+						UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s is not valid ABC GeometryCache, SKIP\n"), *AbcAsset->GetFullName ());
+						continue;
+					}
+
+					// Get Current Geometry Materials
+					TArray<UMaterialInterface *> GeoCacheMatArray = GeoCache->Materials;
+
+					// Check if valid Mat on GeometryCache
+					if (GeoCacheMatArray.Num () > 0) {
+						// Check if Already Material has been set
+						if (GeoCacheMatArray[0]->GetPathName () == AllMats[MatId].MaterialInterface->GetPathName ())
+							continue;
+					}
+					else continue;
+
+					// Check Out file to Modify
+					if (IsSourceControlValid) {
+						if (!FAssetSourceControlHelper::CheckOutFile (MatchedPackagePath)) {
+							UE_LOG (LogMineCustomToolEditor, Error, TEXT ("%s Can't checkout, SKIP\n"), *AbcAsset->GetFullName ());
+							continue;
+						}
+					}
+
+					// Replace Current Mat
+					GeoCache->Modify ();
+					for (uint16 GeoMatId = 0; GeoMatId < GeoCacheMatArray.Num (); ++GeoMatId) {
+						GeoCacheMatArray[GeoMatId] = AllMats[MatId].MaterialInterface;
+					}
+
+					// Update GeometryCache Materials
+					GeoCache->Materials = GeoCacheMatArray;
+					ObjectToSave.Add (AbcAsset);
+				} // Terminate Traversal AbcPathArray
+			} // End Of Iterator of MatIds
+		} // End of Iterator Of Assets
+		UPackageTools::SavePackagesForObjects (ObjectToSave);
+	} // End Of ProcessAssets
+};
+
+
 //////////////////////////////////////////////////////////////////////////
 // FMineContentBrowserExtensions_UStaticMesh
 
@@ -404,6 +497,34 @@ public:
 				NAME_None,
 				EUserInterfaceActionType::Button);
 		}
+
+
+		//////////////////////////////////////////////////////////////
+		///
+		///	FAssetsProcessorFormSelection_UStaticMesh_AbcClothBindToMatSlots
+	    {
+			TSharedPtr<FAssetsProcessorFormSelection_UStaticMesh_AbcClothBindToMatSlots> const StaticMeshAbcClothBindToMatSlots =
+				MakeShareable (new FAssetsProcessorFormSelection_UStaticMesh_AbcClothBindToMatSlots);
+
+			// Add current selection to AssetsProcessor
+			StaticMeshAbcClothBindToMatSlots->SelectedAssets = SelectedAssets;
+
+			// Build a Action Struct : ExecuteSelectedContentFunctor(AssetsProcessor);AssetsProcessor->Execute ();
+			FUIAction const Action_AbcClothBindToMatSlots_ProcessFromAssets (
+				FExecuteAction::CreateStatic (
+					&FMineContentBrowserExtensions_UStaticMesh::ExecuteSelectedContentFunctor,
+					StaticCastSharedPtr<FAssetsProcessorFormSelection_Base> (StaticMeshAbcClothBindToMatSlots))
+			);
+
+			// Add to Menu
+			MenuBuilder.AddMenuEntry (
+				LOCTEXT ("CBE_StaticMesh_AutoBindAbcCacheMat", "Bind Abc-AnimCache Material"),
+				LOCTEXT ("CBE_StaticMesh_AutoBindAbcCacheMat_ToolTips", "Auto Bind Abc-AnimCache Material from selected"),
+				FSlateIcon (),
+				Action_AbcClothBindToMatSlots_ProcessFromAssets,
+				NAME_None,
+				EUserInterfaceActionType::Button);
+	    }
 
 		//////////////////////////////////////////////////////////////
 		///
