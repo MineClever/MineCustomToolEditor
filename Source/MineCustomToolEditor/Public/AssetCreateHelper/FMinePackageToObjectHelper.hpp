@@ -229,7 +229,7 @@ namespace MinePackageLoadHelper
         }
 
         UObject *FoundObject = AssetData.GetAsset ();
-        if (!FoundObject || FoundObject->IsPendingKill ()) {
+        if (!FoundObject || !IsValid(FoundObject)) {
             OutFailureReason = FString::Printf (TEXT ("The asset '%s' exists but was not able to be loaded."), *AssetData.GetObjectPathString());
         }
         else if (!FoundObject->IsAsset ()) {

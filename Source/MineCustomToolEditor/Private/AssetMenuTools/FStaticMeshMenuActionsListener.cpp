@@ -501,7 +501,7 @@ public:
 		bool bCurrentType = false;
 		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
 			const FAssetData &Asset = *AssetIt;
-			bCurrentType = bCurrentType || (Asset.AssetClass == UStaticMesh::StaticClass ()->GetFName ());
+			bCurrentType = bCurrentType || (Asset.GetAsset()->GetClass()->GetFName() == UStaticMesh::StaticClass ()->GetFName ());
 		}
 
 		if (bCurrentType) {
