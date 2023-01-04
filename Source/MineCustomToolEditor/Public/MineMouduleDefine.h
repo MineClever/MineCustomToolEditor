@@ -1,0 +1,32 @@
+﻿#pragma once
+#ifdef CURRENT_CUSTOM_MODULE_NAME
+#undef CURRENT_CUSTOM_MODULE_NAME
+#endif
+#ifndef CURRENT_CUSTOM_MODULE_NAME
+#define CURRENT_CUSTOM_MODULE_NAME "MineCustomToolEditor"
+#endif
+
+
+#ifdef CURRENT_CUSTOM_MODULE_API
+#undef CURRENT_CUSTOM_MODULE_API
+#endif
+#ifndef CURRENT_CUSTOM_MODULE_API
+#define CURRENT_CUSTOM_MODULE_API MINECUSTOMTOOLEDITOR_API
+#endif
+
+// Declare General Log Category, header file .h
+DECLARE_LOG_CATEGORY_EXTERN (LogMineCustomToolEditor, Log, All);
+
+// Define If load example ?
+#define MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
+#define MINE_EDITOR_LOAD_EXAMPLE_ACTOR
+
+#ifdef MINE_EDITOR_LOAD_EXAMPLE_CUSTOM_DATA
+    #define MINE_EDITOR_CUSTOM_DATA_CAN_REIMPORT
+    #define MINE_EDITOR_CUSTOM_DATA_CAN_NEW
+#endif
+
+
+#ifndef  ELIF
+#define ELIF else if
+#endif
