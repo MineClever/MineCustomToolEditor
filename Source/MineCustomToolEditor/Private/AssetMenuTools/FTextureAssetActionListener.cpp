@@ -1,5 +1,6 @@
 ﻿#include <AssetMenuTools/FTextureAssetActionListener.h>
 
+#include "EditorStyleSet.h"
 #include "AssetCreateHelper/FMinePackageSaveHelper.h"
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include "AssetCreateHelper/FMineTexture2DCreateHelper.hpp"
@@ -381,7 +382,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             //    FModuleManager::Get ().LoadModuleChecked<FAssetToolsModule> ("AssetTools");
 
             // Find all inputted path
-            const UAssetImportData * TexImportData = PTexObj->AssetImportData;
+            const UAssetImportData* TexImportData = Cast<UAssetImportData>(PTexObj->AssetImportData);
             const TArray<FString> FilesToImport = TexImportData->ExtractFilenames ();
 
             if (FilesToImport.Num()<=1)
@@ -400,6 +401,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     FString ImageName, PackageDirPath, UnusedPath, LongPackageName;
                     FPaths::Split (ImageFilePath, UnusedPath, ImageName, UnusedPath);
                     FPaths::Split (CurrentPackageFullPath, PackageDirPath, UnusedPath, UnusedPath);
+                    ImageName = ImageName.Replace(TEXT("."),TEXT("_"));
                     FPackageName::TryConvertFilenameToLongPackageName (FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName), LongPackageName);
 
                     // Create New Texture Asset

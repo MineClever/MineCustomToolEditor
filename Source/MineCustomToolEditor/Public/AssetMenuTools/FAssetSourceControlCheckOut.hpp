@@ -407,6 +407,47 @@ public:
 		return false;
 	}
 
+	static bool MarkFilesForRevert (const TArray<FString> &InFiles, bool bSilent = false)
+    {
+		TArray<FString> SCFiles;
+		bool bFilesSkipped = !SourceControlHelpersInternal::ConvertFilesToQualifiedPaths(InFiles, SCFiles, bSilent);
+		const size_t NumFiles = SCFiles.Num();
+
+		// Ensure source control system is up and running
+		ISourceControlProvider* Provider = SourceControlHelpersInternal::VerifySourceControl(bSilent);
+		if (!Provider) {
+			// Error or can't communicate with source control
+			// Could erase the files anyway, though keeping them for now.
+			return false;
+		}
+
+		TArray<FSourceControlStateRef> SCStates;
+		Provider->GetState(SCFiles, SCStates, EStateCacheUsage::ForceUpdate);
+
+		TArray<FString> SCFilesToRevert;
+
+
+		for (size_t Index = 0; Index < NumFiles; ++Index) {
+			FString SCFile = SCFiles[Index];
+			FSourceControlStateRef SCState = SCStates[Index];
+
+			// Less error checking and info is made for multiple files than the single file version.
+			// This multi-file version could be made similarly more sophisticated.
+			if (SCState->IsSourceControlled()) {
+				//Force to read-only to fix p4 elder version bug
+				GetLowLevel().SetReadOnly(*SCFile, true);
+				SCFilesToRevert.Add(SCFile);
+			}
+		}
+
+		bool bSuccess = !bFilesSkipped;
+		if (SCFilesToRevert.Num()) {
+			bSuccess &= Provider->Execute(ISourceControlOperation::Create<FRevert>(), SCFilesToRevert) == ECommandResult::Succeeded;
+		}
+
+		return bSuccess;
+    }
+
 	static bool MarkFilesForDelete (const TArray<FString> &InFiles, bool bSilent = false)
 	{
 		// Determine file type and ensure it is in form source control wants

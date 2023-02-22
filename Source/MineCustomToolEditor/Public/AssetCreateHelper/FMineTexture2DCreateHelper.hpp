@@ -110,6 +110,7 @@ namespace MineAssetCreateHelperInternal
             FString ImageName, ImageDirPath, ImageExtName;
 
             FPaths::Split (LongPicturePath, ImageDirPath, ImageName, ImageExtName);
+            ImageName = ImageName.Replace(TEXT("."), TEXT("_"));
             if (!FPlatformFileManager::Get ().GetPlatformFile ().FileExists (*LongPicturePath)) {
                 UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't find image file : %s"), *LongPicturePath)
                     return nullptr;
@@ -199,8 +200,8 @@ namespace MineAssetCreateHelperInternal
             UTexture2D *Texture = nullptr;
             
             Texture = CreateTextureFromPixelData (TexturePackage, UncompressedRGBA, SizeX, SizeY, LPixelFormat, FName (*ImageName));
-
-            Texture->AssetImportData->AddFileName (LongPicturePath, 0);
+            auto const AssetImportDataArray = Cast<UAssetImportData>(Texture->AssetImportData);
+            AssetImportDataArray->AddFileName (LongPicturePath, 0);
             // Mark package dirty
             TexturePackage->MarkPackageDirty ();
 
