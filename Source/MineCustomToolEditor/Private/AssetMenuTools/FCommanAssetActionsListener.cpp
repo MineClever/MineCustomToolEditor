@@ -11,6 +11,15 @@ namespace FCommonAssetActionsMenuCommandsInfo_Internal
 {
     class MineAssetCtxMenuCommandsInfo : public TCommands<MineAssetCtxMenuCommandsInfo>
     {
+
+    public:
+        /* Command Action Objects */
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_2;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_3;
+        TSharedPtr<FUICommandInfo> MenuCommandInfo_4;
+
     public:
 
         /* INIT */
@@ -48,14 +57,14 @@ namespace FCommonAssetActionsMenuCommandsInfo_Internal
                 "Make Selected assets Writable",
                 EUserInterfaceActionType::Button, FInputGesture ()
             );
+            UI_COMMAND(MenuCommandInfo_4,
+                "ScrCtrl Revert",
+                "Revert Selected assets in source control",
+                EUserInterfaceActionType::Button, FInputGesture()
+            );
+
         }
 
-    public:
-        /* Command Action Objects */
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_0;
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_1;
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_2;
-        TSharedPtr<FUICommandInfo> MenuCommandInfo_3;
     };
 
 };
@@ -98,6 +107,35 @@ namespace FCommonAssetActionProcessors_Internal
                 FilesPath.Add (AssetPathName);
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark Asset Read-only : %s"), *AssetPathName);
             }
+        }
+    };
+
+    // Add custom P4 revert function
+    class FCommonAssetScrRevertProcessor : public FAssetsProcessorFormSelection_Base
+    {
+
+        virtual void Execute() override
+        {
+
+            UAssetEditorSubsystem*&& AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+            TArray<FString> FilesPath;
+            for (auto const AssetData : SelectedAssets) {
+                // Make sure asset unload!
+                auto const Asset = AssetData.GetAsset();
+                AssetSubSystem->CloseAllEditorsForAsset(Asset);
+                FString&& AssetPathName = Asset->GetPackage()->GetPathName();
+                FString&& AssetScrCtrlPath = SourceControlHelpersInternal::ConvertFileToQualifiedPath(AssetPathName, true, false);
+                FAssetSourceControlHelper::GetLowLevel().SetReadOnly(*AssetScrCtrlPath, true);
+                FilesPath.Add(AssetScrCtrlPath);
+                UE_LOG(LogMineCustomToolEditor, Warning, TEXT("Force SourceControl Revert : %s"), *AssetScrCtrlPath);
+                
+            }
+            bool&& bSuccessfullyRevert = FAssetSourceControlHelper::MarkFilesForRevert(FilesPath);
+            if (!bSuccessfullyRevert)
+            {
+                UE_LOG(LogMineCustomToolEditor, Warning, TEXT("Not all selected assets was reverted"));
+            }
+
         }
     };
 
@@ -218,6 +256,7 @@ namespace FCommonAssetContentBrowserExtensions_Internal
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_1);
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_2);
             MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_3);
+            MenuBuilder.AddMenuEntry (ToolCommandsInfo.MenuCommandInfo_4);
         }
 
 
@@ -258,6 +297,14 @@ namespace FCommonAssetContentBrowserExtensions_Internal
                     AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetWritableProcessor> (SelectedAssets)
                 ),
                 FCanExecuteAction ()
+            );
+            CommandList->MapAction(
+                ToolCommandsInfo.MenuCommandInfo_4,
+                FExecuteAction::CreateStatic(
+                    &ExecuteProcessor,
+                    AssetsProcessorCastHelper::CreateBaseProcessorPtr<FCommonAssetScrRevertProcessor>(SelectedAssets)
+                ),
+                FCanExecuteAction()
             );
 
         }
