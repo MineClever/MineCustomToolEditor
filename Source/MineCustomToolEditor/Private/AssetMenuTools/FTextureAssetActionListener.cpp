@@ -17,6 +17,34 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
     class FUTextureAssetProcessor_SetAs_Base :public TAssetsProcessorFormSelection_Builder<UTexture>
     {
+    public:
+        static auto MakeSrgbColorSpaceConvertSettings()
+        {
+            static auto SourceColSettings = FTextureSourceColorSettings();
+            SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_Bradford;
+            SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_sRGB;
+            SourceColSettings.ColorSpace = ETextureColorSpace::TCS_sRGB;
+
+            // Force set coordinate to convert !
+            SourceColSettings.RedChromaticityCoordinate = FVector2D(0.64000, 0.33000);
+            SourceColSettings.GreenChromaticityCoordinate = FVector2D(0.30000, 0.60000);
+            SourceColSettings.BlueChromaticityCoordinate = FVector2D(0.15000, 0.06000);
+            SourceColSettings.WhiteChromaticityCoordinate = FVector2D(0.31270, 0.32900);
+            return SourceColSettings;
+        }
+
+        static auto MakeDefaultColorSpaceConvertSettings()
+        {
+            static auto SourceColSettings = FTextureSourceColorSettings();
+            SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_None;
+            SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_None;
+            SourceColSettings.ColorSpace = ETextureColorSpace::TCS_None;
+            return SourceColSettings;
+        }
+
+
+    protected:
+
         virtual void ProcessAssets (TArray<UTexture *> &Assets) override
         {
             TArray<UObject *> ObjectsToSave;
@@ -39,6 +67,8 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         }
 
         virtual void ProcessTexture (UTexture *const &Texture) = 0;
+
+
     };
 
     class FUTextureAssetProcessor_SetAsLinearMask final : public FUTextureAssetProcessor_SetAs_Base
@@ -77,17 +107,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             if (bSetColorSpace)
             {
-                auto SourceColSettings = FTextureSourceColorSettings();
-                SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_Bradford;
-                SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_sRGB;
-                SourceColSettings.ColorSpace = ETextureColorSpace::TCS_sRGB;
-
-                // Force set coordinate to convert !
-                SourceColSettings.RedChromaticityCoordinate = FVector2D(0.64000 , 0.33000);
-                SourceColSettings.GreenChromaticityCoordinate = FVector2D(0.30000, 0.60000);
-                SourceColSettings.BlueChromaticityCoordinate = FVector2D(0.15000, 0.06000);
-                SourceColSettings.WhiteChromaticityCoordinate = FVector2D(0.31270, 0.32900);
-                Texture->SourceColorSettings = SourceColSettings;
+                Texture->SourceColorSettings = MakeSrgbColorSpaceConvertSettings();
             }
 
         }
@@ -104,11 +124,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             if (bSetColorSpace)
             {
-                static auto SourceColSettings = FTextureSourceColorSettings();
-                SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_None;
-                SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_None;
-                SourceColSettings.ColorSpace = ETextureColorSpace::TCS_None;
-                Texture->SourceColorSettings = SourceColSettings;
+                Texture->SourceColorSettings = MakeDefaultColorSpaceConvertSettings();
             }
 
         }
@@ -276,12 +292,17 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     || (bSRGB && bForceLinear)
                     ) {
                     PTexObj->SRGB = false;
+                    PTexObj->SourceColorSettings = FUTextureAssetProcessor_SetAs_Base::MakeDefaultColorSpaceConvertSettings();
                     /* Legacy Gamma? */
                     PTexObj->bUseLegacyGamma = false;
                     break;
                 }
                 if (bSRGB)
+                {
                     PTexObj->SRGB = true;
+                    PTexObj->SourceColorSettings = FUTextureAssetProcessor_SetAs_Base::MakeSrgbColorSpaceConvertSettings();
+                }
+
                 break;
             } //End Switch
 
