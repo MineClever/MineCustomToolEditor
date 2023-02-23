@@ -104,27 +104,40 @@ namespace MineAssetCreateHelperInternal
             UPackageTools::ReloadPackages (AssetPackages);
         }
 
-        static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName)
+        static UTexture2D *CreateTexture (const FString &LongPicturePath, const FString &LongPackageName, const bool bRegenerateImg = true)
         {
             // Get ImageName from LongPicturePath
             FString ImageName, ImageDirPath, ImageExtName;
 
             FPaths::Split (LongPicturePath, ImageDirPath, ImageName, ImageExtName);
-            ImageName = ImageName.Replace(TEXT("."), TEXT("_"));
-            if (!FPlatformFileManager::Get ().GetPlatformFile ().FileExists (*LongPicturePath)) {
-                UE_LOG (LogMineCustomToolEditor, Error, TEXT ("Can't find image file : %s"), *LongPicturePath)
+            ImageName = FPaths::MakeValidFileName(ImageName,'_').Replace(TEXT("."), TEXT("_"));
+            if (!FPlatformFileManager::Get ().GetPlatformFile ().FileExists (*LongPicturePath)) 
+            {
+                UE_LOG(LogMineCustomToolEditor, Error, TEXT("Can't find image file : %s"), *LongPicturePath);
+                if (bRegenerateImg)
+                {
+                    UE_LOG(LogMineCustomToolEditor, Warning, TEXT("Try to export image file from current package!"));
+                    // TODO: Dump images form current package!
                     return nullptr;
+
+                }
+                else
+                {
+                    return nullptr;
+                }
             }
 
             // Read Local Image to Texture
-            FPixelFormatInfo const LPixelFormat = GPixelFormats[PF_B8G8R8A8];
+            static FPixelFormatInfo const LPixelFormat = GPixelFormats[PF_B8G8R8A8];
             TArray<uint8> RawFileData;
             bool bUseStbLib = false;
             int SizeX = 0, SizeY = 0, ImgChannels = 0;
 
             // Use Stb lib to load Tga file
             if (ImageExtName.Equals (TEXT ("tga"), ESearchCase::IgnoreCase))
+            {
                 bUseStbLib = true;
+            }
 
             if (bUseStbLib) {
                 RawFileData.Empty ();

@@ -46,7 +46,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
     class FUTextureAssetProcessor_SetAsNormal final : public FUTextureAssetProcessor_SetAs_Base
     {
-        virtual void ProcessTexture (UTexture *const &Texture) override
+        virtual void ProcessTexture (UTexture* const &Texture) override
         {
             Texture->CompressionSettings = TextureCompressionSettings::TC_Normalmap;
             Texture->SRGB = false;
@@ -55,7 +55,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
     class FUTextureAssetProcessor_FlipY final : public FUTextureAssetProcessor_SetAs_Base
     {
-        virtual void ProcessTexture (UTexture *const &Texture) override
+        virtual void ProcessTexture (UTexture* const &Texture) override
         {
             Texture->bFlipGreenChannel = !static_cast<bool>(Texture->bFlipGreenChannel);
         }
@@ -63,9 +63,19 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
     class FUTextureAssetProcessor_SetAsSRGB_On final : public FUTextureAssetProcessor_SetAs_Base
     {
-        virtual void ProcessTexture (UTexture* const& Texture) override
+        virtual void ProcessTexture (UTexture* const &Texture) override
         {
             Texture->SRGB = true;
+            static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings>();
+            bool const bSetColorSpace = ConfigSettings->bSetSrgbColorSpace;
+
+            if (bSetColorSpace)
+            {
+                static auto SourceColSettings = FTextureSourceColorSettings();
+                SourceColSettings.ColorSpace = ETextureColorSpace::TCS_sRGB;
+                Texture->SourceColorSettings = SourceColSettings;
+            }
+
         }
     };
 
@@ -74,6 +84,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         virtual void ProcessTexture (UTexture *const &Texture) override
         {
             Texture->SRGB = false;
+            static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings>();
+            bool const bSetColorSpace = ConfigSettings->bSetSrgbColorSpace;
+
+            if (bSetColorSpace)
+            {
+                static auto SourceColSettings = FTextureSourceColorSettings();
+                SourceColSettings.ColorSpace = ETextureColorSpace::TCS_None;
+                Texture->SourceColorSettings = SourceColSettings;
+            }
+
         }
     };
 
@@ -369,6 +389,7 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             if (bVirtualTex && bConvertVirtualTex)
             {
                 ConvertVirtualTexToTex2d (PTexObj, bNormAsMask);
+                MinePackageHelperInternal::SaveUObjectPackage(PTexObj);
             }
 
             /* Save Current Package */
@@ -401,8 +422,9 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
                     FString ImageName, PackageDirPath, UnusedPath, LongPackageName;
                     FPaths::Split (ImageFilePath, UnusedPath, ImageName, UnusedPath);
                     FPaths::Split (CurrentPackageFullPath, PackageDirPath, UnusedPath, UnusedPath);
-                    ImageName = ImageName.Replace(TEXT("."),TEXT("_"));
-                    FPackageName::TryConvertFilenameToLongPackageName (FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName), LongPackageName);
+                    ImageName = FPaths::MakeValidFileName(ImageName,'_').Replace(TEXT("."), TEXT("_"));
+                    // FPackageName::TryConvertFilenameToLongPackageName (FPaths::ConvertRelativePathToFull (PackageDirPath, ImageName), LongPackageName);
+                    LongPackageName = FPackageName::FilenameToLongPackageName(FPaths::ConvertRelativePathToFull(PackageDirPath, ImageName));
 
                     // Create New Texture Asset
                     UE_LOG (LogMineCustomToolEditor,Warning,TEXT("ImageFilePath : %s ,PackageName : %s"), *ImageFilePath, *LongPackageName);

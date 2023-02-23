@@ -4,13 +4,14 @@
 
 namespace MinePackageHelperInternal
 {
-    FORCEINLINE void SaveUObjectPackage (UObject *InObject)
+    FORCEINLINE void SaveUObjectPackage (UObject* InObject)
     {
-        InObject->GetPackage ()->MarkPackageDirty ();
-        UPackage::Save (InObject->GetPackage (),
+        auto &&ObjectPackage = InObject->GetPackage();
+        ObjectPackage->MarkPackageDirty ();
+        UPackage::Save (ObjectPackage,
             InObject,
             EObjectFlags::RF_Public | ::RF_Standalone,
-            *InObject->GetPackage ()->GetName (),
+            *(ObjectPackage->GetName ()),
             GError,
             nullptr,
             true,

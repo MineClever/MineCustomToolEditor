@@ -442,6 +442,11 @@ public:
 
 		bool bSuccess = !bFilesSkipped;
 		if (SCFilesToRevert.Num()) {
+			if (GetDefault<USourceControlPreferences>()->bShouldDeleteNewFilesOnRevert)
+			{
+				UE_LOG(LogMineCustomToolEditor, Warning, TEXT("Fix Should Delect New Files ..."));
+			}
+
 			bSuccess &= Provider->Execute(ISourceControlOperation::Create<FRevert>(), SCFilesToRevert) == ECommandResult::Succeeded;
 		}
 

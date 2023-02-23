@@ -83,6 +83,9 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "MineTextureFormat")
 	FString ConfigTexHdrTags = TEXT("hdr,hdri,floating");
 
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = "MineTextureFormat")
+	bool bSetSrgbColorSpace = true;
+
 	// All StaticMesh Asset Configures
 	///////////////////////////////////////////////
 
