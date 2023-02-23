@@ -23,7 +23,13 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
             TArray<UPackage * > PackagesToReload;
             for (auto TexIt = Assets.CreateConstIterator (); TexIt; ++TexIt) {
                 UTexture *const Texture = *TexIt;
+                if (!Texture->CanModify())
+                {
+                    //Skip if not modify valid
+                    continue;
+                }
                 Texture->Modify ();
+                Texture->DeferCompression = true;
                 ProcessTexture (Texture);
                 ObjectsToSave.Add (Texture);
                 PackagesToReload.Add (Texture->GetPackage ());
@@ -71,8 +77,16 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
 
             if (bSetColorSpace)
             {
-                static auto SourceColSettings = FTextureSourceColorSettings();
+                auto SourceColSettings = FTextureSourceColorSettings();
+                SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_Bradford;
+                SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_sRGB;
                 SourceColSettings.ColorSpace = ETextureColorSpace::TCS_sRGB;
+
+                // Force set coordinate to convert !
+                SourceColSettings.RedChromaticityCoordinate = FVector2D(0.64000 , 0.33000);
+                SourceColSettings.GreenChromaticityCoordinate = FVector2D(0.30000, 0.60000);
+                SourceColSettings.BlueChromaticityCoordinate = FVector2D(0.15000, 0.06000);
+                SourceColSettings.WhiteChromaticityCoordinate = FVector2D(0.31270, 0.32900);
                 Texture->SourceColorSettings = SourceColSettings;
             }
 
@@ -84,12 +98,15 @@ namespace FUTextureAssetProcessor_AutoSetTexFormat_Internal
         virtual void ProcessTexture (UTexture *const &Texture) override
         {
             Texture->SRGB = false;
-            static auto const ConfigSettings = GetDefault<UMineEditorConfigSettings>();
+            auto const ConfigSettings = GetDefault<UMineEditorConfigSettings>();
+            
             bool const bSetColorSpace = ConfigSettings->bSetSrgbColorSpace;
 
             if (bSetColorSpace)
             {
                 static auto SourceColSettings = FTextureSourceColorSettings();
+                SourceColSettings.ChromaticAdaptationMethod = ETextureChromaticAdaptationMethod::TCAM_None;
+                SourceColSettings.EncodingOverride = ETextureSourceEncoding::TSE_None;
                 SourceColSettings.ColorSpace = ETextureColorSpace::TCS_None;
                 Texture->SourceColorSettings = SourceColSettings;
             }
