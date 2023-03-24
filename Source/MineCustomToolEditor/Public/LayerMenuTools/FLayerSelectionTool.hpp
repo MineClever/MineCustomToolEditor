@@ -1,6 +1,7 @@
 #pragma once
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 #include "CoreMinimal.h"
+#include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "MineMouduleDefine.h"
 #include "Layers/Public/LayersModule.h"
