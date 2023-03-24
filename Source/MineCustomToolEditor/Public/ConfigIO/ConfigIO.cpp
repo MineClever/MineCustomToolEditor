@@ -64,7 +64,7 @@ void FMineToolConfigLoader::OnStartupModule ()
 
     TSharedPtr<FTimerHandle> const SetNearClipTimerHandlePtr = MakeShareable (new FTimerHandle);
     TSharedPtr<FTimerHandle> const ForceGCTimerHandlePtr = MakeShareable (new FTimerHandle);
-    GEditor->GetTimerManager ()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
+    // GEditor->GetTimerManager ()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
     GEditor->GetTimerManager ()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 1.0f, true, 30.0f);
 
 }
