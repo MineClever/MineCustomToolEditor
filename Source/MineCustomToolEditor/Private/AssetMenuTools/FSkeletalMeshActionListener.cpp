@@ -263,7 +263,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     if (CurMatSlotName.ToLower() == ("Mat_" + NameString).ToLower())
                     {
                         RefMatID = MatId;
-                        UE_LOG(LogMineCustomToolEditor, Log, TEXT("Mat SlotName Matched directly!\n"));
+                        UE_LOG(LogMineCustomToolEditor, Warning, TEXT("Mat SlotName Matched directly!\n"));
                         bHasFoundMatchedMatId = true;
                         break;
                     }
@@ -282,7 +282,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         {
                             UE_LOG(LogMineCustomToolEditor, Log, TEXT("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
                             RefMatID = MatId;
-                            bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                            bHasFoundMatchedMatId |= true;
                             LastStringMatchedCount = CurMatchedCount;
                         }
                     }
@@ -307,9 +307,8 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                         if (LastStringMatchedCount >= CurMatchedCount)
                         {
-                            
                             RefMatID = MatId;
-                            bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                            bHasFoundMatchedMatId |= true;
                             LastStringMatchedCount = CurMatchedCount;
                         }
                     }
@@ -445,7 +444,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                  FPackageName::TryConvertFilenameToLongPackageName ((MatchedDirPath / MatchedPackagePaths[PathId]), MatchedPackagePaths[PathId]);
             }
 
-            return MatchedPackagePaths.Num () > 0 ? true : false;
+            return MatchedPackagePaths.Num () > 0;
         }
 
         static void MakeRelativeAbcDirPath (const FString &MatPackagePath, TArray<FString> &AbcPathArray)
