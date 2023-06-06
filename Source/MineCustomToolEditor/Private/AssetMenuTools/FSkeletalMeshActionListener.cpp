@@ -183,7 +183,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
     class FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots : public TAssetsProcessorFormSelection_Builder<LocAssetType>
     {
     private:
-        bool &&bDebugCls = false;
+        bool &&bDebugCls = true;
 
     public:
         FSkeletalMeshProcessor_AbcTrackMatBindToMatSlots () :TAssetsProcessorFormSelection_Builder<LocAssetType> (false)
@@ -230,10 +230,12 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
             auto LambdaFindMatIdByName = [&](const FString &NameString, const TArray<FSkeletalMaterial> &AllMats, uint16 &RefMatID) -> bool
             {
                 bool bHasFoundMatchedMatId = false;
-                if (bDebugCls) UE_LOG (LogMineCustomToolEditor, Log, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
+                UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("MatFinder Try to find with key name : %s ;\n"), *NameString);
 
                 TArray<FString> IgnoreKeywords = { TEXT("_DaiLi"), TEXT("_Proxy")};
 
+                uint32 LastStringMatchedCount = MAX_uint32;
+                FString&& RightString = "";
                 for (uint16 MatId = 0; MatId < AllMats.Num (); ++MatId) {
 
                     /* NOTE: Ready for process with names */
@@ -242,7 +244,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
 
                     FString &&CurMatInterfaceName = AllMats[MatId].MaterialInterface->GetName();
                     FString &&CurMatSlotName = AllMats[MatId].MaterialSlotName.ToString ();
-                    UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find with interface name :%s, matslot name :%s\n"), *CurMatInterfaceName, *CurMatSlotName);
+                    // UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Try to find with interface name :%s, matslot name :%s\n"), *CurMatInterfaceName, *CurMatSlotName);
 
 
                     /* NOTE: Skip with IgnoreKeywords */
@@ -257,28 +259,62 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                     }
                     if ((bSkipWithIgnoreKeyword)) continue;
 
-
-                    /* NOTE: Check with current Material Interface name */
-                    if (CurMatInterfaceName.Find (NameString,ESearchCase::IgnoreCase,ESearchDir::FromEnd) > 0)
+                    // NOTE: If has valid name in mat slot, just skip finding...
+                    if (CurMatSlotName.ToLower() == ("Mat_" + NameString).ToLower())
                     {
-
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat Interface Mode; Mat Matched @ MatID %d \n"), *NameString, MatId);
                         RefMatID = MatId;
-                        bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                        UE_LOG(LogMineCustomToolEditor, Log, TEXT("Mat SlotName Matched directly!\n"));
+                        bHasFoundMatchedMatId = true;
+                        break;
                     }
+
+                    /* -------------------------------------------------------------------------- */
+                    
                     /* NOTE: Check with current Material Slot name */
-                    if (!bHasFoundMatchedMatId)
+                    UE_LOG(LogMineCustomToolEditor, Log, TEXT("using Mat SlotName Mode\n"));
+                    if (CurMatSlotName.Contains(NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd))
                     {
-                        UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Not found by Mat Interface Mode , using Mat SlotName Mode\n"));
-                        if (CurMatSlotName.Find (NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd) < 0) continue;
-                        else
+                        if (bDebugCls) UE_LOG(LogMineCustomToolEditor, Error, TEXT("Has Contains"));
+                        CurMatSlotName.Split(NameString,nullptr, &RightString);
+                        uint32 &&CurMatchedCount = RightString.Len();
+
+                        if (LastStringMatchedCount >= CurMatchedCount)
                         {
-                            UE_LOG (LogMineCustomToolEditor, Log, TEXT ("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
+                            UE_LOG(LogMineCustomToolEditor, Log, TEXT("Mat SlotName Mode; Mat Matched @ MatID %d \n"), MatId);
                             RefMatID = MatId;
                             bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                            LastStringMatchedCount = CurMatchedCount;
+                        }
+                    }
+                    else
+                    {
+                        if (bDebugCls) UE_LOG(LogMineCustomToolEditor, Error, TEXT("No Contains"));
+                    }
+
+                    /* NOTE: Check with current Material Interface name */
+                    // Bug: if not fully match?!
+
+                    bool &&bCheckWithInterfaceName = true;
+                    if (!bCheckWithInterfaceName) continue;
+                    if (bHasFoundMatchedMatId) continue;
+
+                    UE_LOG(LogMineCustomToolEditor, Log, TEXT("Use Material Interaface name to Match ..."));
+                    if (CurMatInterfaceName.Contains(NameString, ESearchCase::IgnoreCase, ESearchDir::FromEnd))
+                    {
+
+                        CurMatInterfaceName.Split(NameString, nullptr, &RightString);
+                        uint32 &&CurMatchedCount = RightString.Len();
+
+                        if (LastStringMatchedCount >= CurMatchedCount)
+                        {
+                            
+                            RefMatID = MatId;
+                            bHasFoundMatchedMatId = bHasFoundMatchedMatId || true;
+                            LastStringMatchedCount = CurMatchedCount;
                         }
                     }
                 }
+                if (bDebugCls) UE_LOG(LogMineCustomToolEditor, Display, TEXT("Matched to element %d"), RefMatID);
                 return bHasFoundMatchedMatId;
             };
 
@@ -338,7 +374,7 @@ namespace FSkeletalMeshProcessor_AutoSet_Internal
                         {
                             FString CurrentTrackName = GeoCacheTracks[GeoCacheTrackId]->GetName();
                             uint16 MatchedCurMatId = 0;
-                            FString MatchedCurMainName = "UnknownMesh";
+                            FString MatchedCurMainName = "__Null__";
 
                             // NOTE: Found main mesh name and section index
                             static TArray<FString> RegexMatchResult;

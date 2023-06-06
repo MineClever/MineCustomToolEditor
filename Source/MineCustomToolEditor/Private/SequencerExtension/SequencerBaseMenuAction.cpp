@@ -2,6 +2,7 @@
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include <AssetCreateHelper/FMinePackageToObjectHelper.hpp>
 
+#include "EditorStyleSet.h"
 #include "GeometryCache.h"
 #include "LevelSequence.h"
 #include "ISequencer.h"
