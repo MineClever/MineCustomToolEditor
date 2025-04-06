@@ -128,4 +128,7 @@ public:
 	virtual void OnStartupModule() override;
 	virtual void OnShutdownModule() override;
 
+private:
+	TSharedPtr<FTimerHandle> SetNearClipTimerHandlePtr;
+	TSharedPtr<FTimerHandle> ForceGCTimerHandlePtr;
 };

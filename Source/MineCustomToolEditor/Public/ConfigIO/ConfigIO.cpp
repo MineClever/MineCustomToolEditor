@@ -61,19 +61,28 @@ void FMineToolConfigLoader::OnStartupModule ()
         }
     };
 
-
-    TSharedPtr<FTimerHandle> const SetNearClipTimerHandlePtr = MakeShareable (new FTimerHandle);
-    TSharedPtr<FTimerHandle> const ForceGCTimerHandlePtr = MakeShareable (new FTimerHandle);
-    // GEditor->GetTimerManager ()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
-    GEditor->GetTimerManager ()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 1.0f, true, 30.0f);
+    this->SetNearClipTimerHandlePtr = MakeShareable (new FTimerHandle);
+    this->ForceGCTimerHandlePtr = MakeShareable (new FTimerHandle);
+    GEditor->GetTimerManager()->SetTimer (*SetNearClipTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToSetNearClip), 5.0f, true, 5.0f);
+    GEditor->GetTimerManager()->SetTimer (*ForceGCTimerHandlePtr, FTimerDelegate::CreateLambda (TimerToForceGC), 1.0f, true, 30.0f);
 
 }
 
 void FMineToolConfigLoader::OnShutdownModule ()
 {
+    auto&& TimerManager = GEditor->GetTimerManager ();
+    for (auto&& TimerHandlePtr : TArray<TSharedPtr<FTimerHandle>>()={this->SetNearClipTimerHandlePtr, this->ForceGCTimerHandlePtr} )
+    {
+        if (TimerManager->TimerExists(*TimerHandlePtr))
+        {
+            TimerManager->ClearTimer(*TimerHandlePtr);
+        }
+    }
+
     // Unregistered settings
     ISettingsModule *SettingsModule = FModuleManager::GetModulePtr<ISettingsModule> ("Settings");
     if (SettingsModule) {
         SettingsModule->UnregisterSettings (BaseSetting.ContainerName, BaseSetting.CategoryName, BaseSetting.SectionName);
     }
+    
 }
