@@ -53,15 +53,15 @@ void FMineToolEditor::StartupModule ()
             FModuleManager::LoadModuleChecked<FLevelEditorModule> ("LevelEditor");
 
         /* 2. Find Menu Extension Manager*/
-        LevelEditorMenuExtensibilityManager = LevelEditorModule.GetMenuExtensibilityManager ();
+        this->LevelEditorMenuExtensibilityManager = LevelEditorModule.GetMenuExtensibilityManager ();
 
         /* 3. Make MenuExtender */
-        MenuExtender = MakeShareable (new FExtender);
+        this->MenuExtender = MakeShareable (new FExtender);
         // Make MenuExtender Builder Callback
         auto &&MenuBarExtensionDelegate = 
             FMenuBarExtensionDelegate::CreateRaw (this, &FMineToolEditor::MakePulldownMenu);
         // Init MenuExtender Object
-        MenuExtender->AddMenuBarExtension (
+        this->MenuExtender->AddMenuBarExtension (
             "Window", EExtensionHook::After,
             nullptr,
             MenuBarExtensionDelegate);

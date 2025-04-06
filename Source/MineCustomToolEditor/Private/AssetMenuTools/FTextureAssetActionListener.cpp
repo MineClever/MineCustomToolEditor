@@ -564,7 +564,9 @@ namespace  FTextureAssetActionListener_Internal
             static TSharedPtr<FUICommandList> CommandList;
 
             if (!CommandList.IsValid ())
+            {
                 CommandList = MakeShareable (new FUICommandList);
+            }
             TSharedRef<FExtender> Extender (new FExtender ());
 
             MappingCommand (CommandList, SelectedAssets);

@@ -57,7 +57,7 @@ public:
 		UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Static Mesh Set High Precision UV|Tangent Processor Run !! "));
 
 		// Unreal AssetSubSystem
-		UAssetEditorSubsystem *const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
+		UAssetEditorSubsystem* const AssetSubSystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem> ();
 
 		// TODO: Read from Config
 		float const NewDFResolutionScale = 24;
@@ -74,7 +74,7 @@ public:
 				Asset->Modify ();
 
 				for (uint32 i = 0; i < SourceModelNums; ++i) {
-					auto &&Model = Asset->GetSourceModel (i);
+					auto&& Model = Asset->GetSourceModel (i);
 					Model.BuildSettings.bUseFullPrecisionUVs = 1;
 					Model.BuildSettings.bUseHighPrecisionTangentBasis = 1;
 				}
