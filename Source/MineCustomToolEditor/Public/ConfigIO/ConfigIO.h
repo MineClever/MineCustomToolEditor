@@ -9,9 +9,9 @@ class CURRENT_CUSTOM_MODULE_API UMineEditorConfigSettings : public UObject
 	GENERATED_BODY()
 
 public:
-	// All Default Camera Configures
-	///////////////////////////////////////////////
-	///
+    // All Default Camera Configures
+	/////////////////////////////////////////////
+	
 	UPROPERTY(EditAnywhere, config, Category = "MineDefaultCameraOverride")
 	bool bUseCustomDefaultCameraConfig = true;
 
@@ -82,6 +82,9 @@ public:
 
 	UPROPERTY(EditAnywhere, config, Category = "MineTextureFormat")
 	FString ConfigTexHdrTags = TEXT("hdr,hdri,floating");
+
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = "MineTextureFormat")
+	bool bSetSrgbColorSpace = true;
 
 	// All StaticMesh Asset Configures
 	///////////////////////////////////////////////
