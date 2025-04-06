@@ -17,7 +17,6 @@ public class MineCustomToolEditor : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-                // Path.Combine(ModuleDirectory,"../Plugins/Runtime/GeometryCache"),
 				Path.Combine(ModuleDirectory,"../ThirdPart/stb"),
                 "../Plugins/Runtime/GeometryCache"
                 // ... add public include paths required here ...
@@ -49,7 +48,9 @@ public class MineCustomToolEditor : ModuleRules
                 "AnimGraph",
                 "ComponentVisualizers",
                 "SourceControl",
-				"RHI",
+                "Renderer",
+                "RHI",
+                "VirtualTexturingEditor",
 				"ImageWrapper",
 				"GeometryCache",
                 "Sequencer",
@@ -59,9 +60,10 @@ public class MineCustomToolEditor : ModuleRules
 				"MovieSceneTracks", 
                 "MovieSceneCapture",
 				//add because update to unreal 5.1
-				"ApplicationCore"
+				"ApplicationCore", 
+				"Layers"
 
-                // ... add other public dependencies that you statically link with here ...
+				// ... add other public dependencies that you statically link with here ...
 			}
 			);
 			
@@ -79,8 +81,9 @@ public class MineCustomToolEditor : ModuleRules
                 "KismetWidgets",
                 "MainFrame",
                 "PropertyEditor",
-                "ComponentVisualizers"
-
+                "ComponentVisualizers",
+                "Renderer",
+                "RHI"
                 // ... add private dependencies that you statically link with here ...	
 			}
 			);

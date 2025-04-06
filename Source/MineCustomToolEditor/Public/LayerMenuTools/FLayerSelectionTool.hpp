@@ -1,11 +1,13 @@
 #pragma once
 #include "Interfaces/IMineCustomToolModuleInterface.h"
 #include "CoreMinimal.h"
+#include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "MineMouduleDefine.h"
-#include "Layers/Public/LayersModule.h"
-#include "Layers/Private/LayerCollectionViewModel.h"
-#include "Layers/Private/LayerCollectionViewCommands.h"
+#include "HAL/PlatformApplicationMisc.h"
+#include "LayersModule.h"
+#include "Layers/LayersSubsystem.h"
+
 
 #define LOCTEXT_NAMESPACE "FLayerSelectionTool"
 
@@ -19,7 +21,7 @@ public:
             TEXT ("MineLayerTool"), // Context name for fast lookup
             LOCTEXT ("MineLayerToolMenu", "Mine Custom Layer Menu"), // Context name for displaying
             NAME_None,   // No parent context
-            FEditorStyle::GetStyleSetName () // Icon Style Set
+            FAppStyle::GetAppStyleSetName() // Icon Style Set
             )
     {
     }
@@ -81,7 +83,7 @@ struct StaticCommandCallback
                 }
             }
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
-            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+            FPlatformApplicationMisc::ClipboardCopy (*StringArrayToCopy);
         }
     }
 
@@ -99,7 +101,7 @@ struct StaticCommandCallback
                 StringArrayToCopy.Append (AllLayerNames[NameId].ToString () + "\n");
             }
             UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Layers Name Export to CopyBoard"));
-            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+            FPlatformApplicationMisc::ClipboardCopy (*StringArrayToCopy);
         }
     };
 
@@ -113,7 +115,7 @@ struct StaticCommandCallback
 
         }
         UE_LOG (LogMineCustomToolEditor, Warning, TEXT (" Actors Name Export to CopyBoard"));
-        FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+        FPlatformApplicationMisc::ClipboardCopy (*StringArrayToCopy);
     }
 };
 
@@ -350,7 +352,9 @@ public:
     {
         for (auto Instance : InstancesArray) {
             if (Instance.IsValid ())
+            {
                 Instance->Unload ();
+            }
         }
     };
 };

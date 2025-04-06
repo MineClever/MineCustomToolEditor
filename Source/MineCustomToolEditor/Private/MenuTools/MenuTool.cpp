@@ -1,4 +1,6 @@
 ﻿#include "MenuTools/MenuTool.h"
+
+#include "EditorStyleSet.h"
 #include "MineCustomToolEditor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "PackageTools.h"
@@ -15,7 +17,7 @@ public:
             TEXT ("MenuTool"), // Context name for fast lookup
             FText::FromString ("Example Menu tool"), // Context name for displaying
             NAME_None,   // No parent context
-            FEditorStyle::GetStyleSetName () // Icon Style Set
+            FAppStyle::GetAppStyleSetName() // Icon Style Set
             )
     {
     }

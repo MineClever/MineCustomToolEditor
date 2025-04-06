@@ -1,5 +1,7 @@
 ﻿#include "DetailsCustomization/ExampleActorDetails.h"
 
+#include "EditorStyleSet.h"
+
 
 TSharedRef<IDetailCustomization> FExampleActorDetails::MakeInstance ()
 {

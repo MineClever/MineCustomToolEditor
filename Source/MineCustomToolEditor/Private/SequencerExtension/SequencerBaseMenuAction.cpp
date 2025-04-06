@@ -2,6 +2,7 @@
 #include "AssetCreateHelper/FMineStringFormatHelper.h"
 #include <AssetCreateHelper/FMinePackageToObjectHelper.hpp>
 
+#include "EditorStyleSet.h"
 #include "GeometryCache.h"
 #include "LevelSequence.h"
 #include "ISequencer.h"
@@ -268,8 +269,12 @@ namespace FMineSequencerBaseMenuAction_Internal
 
             UMovieScenePrimitiveMaterialTrack *NewTrack =
                 MovieScene->AddTrack<UMovieScenePrimitiveMaterialTrack> (ObjectBindingID);
-            // NewTrack->MaterialIndex = MaterialIndex;
-            NewTrack->SetMaterialIndex(MaterialIndex);
+            //NewTrack->MaterialIndex = MaterialIndex;
+            //NewTrack->SetMaterialIndex(MaterialIndex);
+            auto&& MaterialInfo = FComponentMaterialInfo();
+            MaterialInfo.MaterialSlotIndex = MaterialIndex;
+            MaterialInfo.MaterialSlotName = SlotName;
+            NewTrack->SetMaterialInfo(MaterialInfo);
             NewTrack->SetDisplayName (FText::Format (LOCTEXT ("MaterialTrackName_Format", "Proxy_{0}"), FText::FromName (SlotName))
             );
 
@@ -476,7 +481,7 @@ namespace FMineSequencerBaseMenuAction_Internal
                 TEXT (CMD_INFO_CTX_NAME), // Context name for fast lookup
                 FText::FromString(TEXT (CMD_INFO_CTX_NAME)), // Context name for displaying
                 NAME_None,   // No parent context
-                FEditorStyle::GetStyleSetName () // Icon Style Set
+                FAppStyle::GetAppStyleSetName() // Icon Style Set
                 )
         {
         }
@@ -502,7 +507,7 @@ namespace FMineSequencerBaseMenuAction_Internal
         }
 
         // Mapping FUICommandList
-        static void MapCommands (const TSharedPtr<FUICommandList> &CommandList)
+        static void MapCommands (const TSharedPtr<FUICommandList>& CommandList)
         {
             auto BaseMenuAction_CommandInfo = Get ();
 
@@ -559,7 +564,7 @@ namespace FMineSequencerBaseMenuAction_Internal
             //}
             BarBuilder.AddToolBarButton (BaseMenuAction_CommandInfo.UICommandInfoArray[0],
                 NAME_None, TAttribute<FText> (), TAttribute<FText> (),
-                FSlateIcon (FEditorStyle::GetStyleSetName (), "Matinee.ToggleCurveEditor")
+                FSlateIcon (FAppStyle::GetAppStyleSetName(), "Matinee.ToggleCurveEditor")
             );
             BarBuilder.EndSection ();
             BarBuilder.AddSeparator ();

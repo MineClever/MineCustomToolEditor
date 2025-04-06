@@ -1,5 +1,7 @@
-﻿
+﻿#pragma once
 #include <AssetMenuTools/FAlembicAssetActionsListener.h>
+
+#include "HAL/PlatformMisc.h"
 #include "EditorStyleSet.h"
 #include "PackageTools.h"
 
@@ -105,7 +107,7 @@ namespace FAlembicAssetMenuActionsListener_Internal
         {
 
             FNsLocTextDescriptions LSubMenuDescriptions;
-            LSubMenuDescriptions.Key = TEXT ("AlembicActionsSubMenuLabel");
+            LSubMenuDescriptions.Key = TEXT("AlembicActionsSubMenuLabel");
             LSubMenuDescriptions.KeyDescription = TEXT ("Alembic Cache Asset Actions");
             LSubMenuDescriptions.LocTextNameSpace = TEXT (LOCTEXT_NAMESPACE);
             this->SubMenuDescriptions = LSubMenuDescriptions;

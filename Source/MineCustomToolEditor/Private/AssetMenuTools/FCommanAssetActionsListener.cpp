@@ -3,6 +3,7 @@
 #include "AssetMenuTools/FCommonAssetActionsListener.h"
 #include "PackageTools.h"
 #include "AssetMenuTools/TAssetsProcessorFormSelection.hpp"
+#include "HAL/PlatformApplicationMisc.h"
 
 #define LOCTEXT_NAMESPACE "FCommanAssetActionsListener"
 
@@ -31,22 +32,22 @@ namespace FCommonAssetActionsMenuCommandsInfo_Internal
             UI_COMMAND (MenuCommandInfo_0,
                 "Reload selected assets",
                 "Reload selected assets form top package.",
-                EUserInterfaceActionType::Button, FInputGesture ()
+                EUserInterfaceActionType::Button, FInputChord ()
             );
             UI_COMMAND (MenuCommandInfo_1,
                 "Copy Asset Content Path",
                 "Copy Asset Content Path from selected.",
-                EUserInterfaceActionType::Button, FInputGesture ()
+                EUserInterfaceActionType::Button, FInputChord ()
             );
             UI_COMMAND (MenuCommandInfo_2,
                 "Make Read-only",
                 "Make Selected assets Read-only",
-                EUserInterfaceActionType::Button, FInputGesture ()
+                EUserInterfaceActionType::Button, FInputChord ()
             );
             UI_COMMAND (MenuCommandInfo_3,
                 "Make Writable",
                 "Make Selected assets Writable",
-                EUserInterfaceActionType::Button, FInputGesture ()
+                EUserInterfaceActionType::Button, FInputChord ()
             );
         }
 
@@ -94,7 +95,10 @@ namespace FCommonAssetActionProcessors_Internal
                 auto const Asset = AssetData.GetAsset ();
                 AssetSubSystem->CloseAllEditorsForAsset (Asset);
                 FString AssetPathName = Asset->GetPackage ()->GetPathName ();
-                FAssetSourceControlHelper::GetLowLevel ().SetReadOnly (*SourceControlHelpersInternal::ConvertFileToQualifiedPath(AssetPathName,true,false), true);
+                FAssetSourceControlHelper::GetLowLevel ().SetReadOnly (
+                    *SourceControlHelpersInternal::ConvertFileToQualifiedPath(AssetPathName,true,false),
+                    true
+                );
                 FilesPath.Add (AssetPathName);
                 UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Mark Asset Read-only : %s"), *AssetPathName);
             }
@@ -137,7 +141,8 @@ namespace FCommonAssetActionProcessors_Internal
                 StringArrayToCopy.Append ("\n");
                 ++LoopCount;
             }
-            FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+
+            FPlatformApplicationMisc::ClipboardCopy (*StringArrayToCopy);
         }
     };
 
@@ -169,7 +174,9 @@ namespace FCommonAssetContentBrowserExtensions_Internal
             static TSharedPtr<FUICommandList> CommandList;
 
             if (!CommandList.IsValid ())
+            {
                 CommandList = MakeShareable (new FUICommandList);
+            }
             TSharedRef<FExtender> Extender (new FExtender ());
 
             MappingCommand (CommandList, SelectedAssets);

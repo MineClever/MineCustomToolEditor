@@ -9,7 +9,7 @@
 #include "GeometryCacheTrack.h"
 #include "./FMeshAssetPathFounder.hpp"
 #include "UObject/ObjectSaveContext.h"
-
+#include "HAL/PlatformApplicationMisc.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Start LocText NameSpace
@@ -43,7 +43,7 @@ public:
 			++LoopCount;
 		}
 		
-		FPlatformMisc::ClipboardCopy (*StringArrayToCopy);
+		FPlatformApplicationMisc::ClipboardCopy (*StringArrayToCopy);
 	};
 };
 
@@ -79,7 +79,8 @@ public:
 					Model.BuildSettings.bUseHighPrecisionTangentBasis = 1;
 				}
 				Asset->Build ();
-				Asset->PostSaveRoot (true);
+				//Asset->PostSaveRoot (true);
+				SaveToTransactionBuffer(Asset->GetPackage(), true);
 
 				// Save!!
 				MinePackageHelperInternal::SaveUObjectPackage (Asset);
@@ -123,7 +124,8 @@ public:
 					Asset->DistanceFieldSelfShadowBias = 0.02;
 					Asset->bGenerateMeshDistanceField = 1;
 				}
-				Asset->PostSaveRoot (true);
+				
+				SaveToTransactionBuffer(Asset, true);
 				Asset->Build ();
 
 				// Save!!
@@ -158,7 +160,7 @@ public:
 
 				Asset->Modify ();
 				Asset->bGenerateMeshDistanceField = 0;
-				Asset->PostSaveRoot (true);
+				SaveToTransactionBuffer(Asset, true);
 				Asset->Build ();
 
 				// Save!!

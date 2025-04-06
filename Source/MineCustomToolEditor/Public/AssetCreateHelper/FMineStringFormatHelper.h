@@ -37,9 +37,9 @@ namespace MineFormatStringInternal
 
     struct FNsLocTextDescriptions
     {
-        TCHAR *Key;
-        TCHAR *KeyDescription;
-        TCHAR *LocTextNameSpace;
+        FString Key;
+        FString KeyDescription;
+        FString LocTextNameSpace;
     };
 
     /**
@@ -50,10 +50,15 @@ namespace MineFormatStringInternal
     FORCEINLINE static FText NsLocText (const FNsLocTextDescriptions &Descriptions)
     {
         return
-            FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText (
-                Descriptions.KeyDescription,
-                Descriptions.LocTextNameSpace,
-                Descriptions.Key
-            );
+        FText::AsLocalizable_Advanced(
+            Descriptions.LocTextNameSpace,
+            Descriptions.Key,
+            Descriptions.KeyDescription
+        );
+        /*FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText (
+            Descriptions.KeyDescription,
+            Descriptions.LocTextNameSpace,
+            Descriptions.Key
+        );*/
     }
 }

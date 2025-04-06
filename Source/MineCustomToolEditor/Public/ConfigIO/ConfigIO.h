@@ -109,6 +109,7 @@ public:
 
 class FMineToolConfigLoader : public IMineCustomToolModuleListenerInterface
 {
+	
 protected:
 	struct FConfigSettingsName
 	{
@@ -123,4 +124,5 @@ public:
 	FConfigSettingsName BaseSetting;
 	virtual void OnStartupModule() override;
 	virtual void OnShutdownModule() override;
+
 };

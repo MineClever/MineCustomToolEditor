@@ -1,16 +1,17 @@
 #pragma once
 #include "MineMouduleDefine.h"
 #include <AssetRegistry/AssetRegistryModule.h>
-#include "Engine/Private/VT/VirtualTextureBuiltData.h"
+#include "VT/VirtualTexture.h"
 #include "Factories/TextureFactory.h"
 #include "Misc/FileHelper.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
-#include "RHI.h"
+#include "PackageHelperFunctions.h"
 #include "EditorFramework/AssetImportData.h"
 #include "HAL/UnrealMemory.h"
 #include "PackageTools.h"
 
+#include "Runtime/Engine/Private/VT/VirtualTextureBuiltData.h"
 
 
 namespace MineAssetCreateHelperInternal
@@ -38,14 +39,17 @@ namespace MineAssetCreateHelperInternal
 
             // Read image data from VirtualTexture
             const FTexturePlatformData* const PlatformData = VirtualTexObj->GetPlatformData();
+
             int32 const VT_WidthInTilesCount = PlatformData->VTData->GetWidthInTiles ();
             int32 const VT_HeightInTilesCount = PlatformData->VTData->GetHeightInTiles();
             int32 &&VT_TitleSize = PlatformData->VTData->TileSize;
 
             auto VT_DataChunks = PlatformData->VTData->Chunks;
-            auto CreateAndSaveTexPackage =
-                [&](const FString &CurrentChunkOuterPackageName, const uint8* &TextureDataRawArray) {
+            auto CreateAndSaveTexPackage =[&](const FString &CurrentChunkOuterPackageName, const uint8* &TextureDataRawArray)
+            {
+                
                 UPackage *TexturePackage = CreatePackage (*CurrentChunkOuterPackageName);
+                //UPackage *TexturePackage = UPackageTools::FindOrCreatePackageForAssetType(FName(*CurrentChunkOuterPackageName),UTexture2D::StaticClass());
                 TexturePackage->FullyLoad ();
 
                 FName const ShortTextureName = *FPaths::GetBaseFilename (CurrentChunkOuterPackageName);
@@ -54,7 +58,7 @@ namespace MineAssetCreateHelperInternal
                     ShortTextureName);
 
                 // Mark package dirty
-                TexturePackage->MarkPackageDirty ();
+                TexturePackage->MarkPackageDirty();
 
                 // Register Asset
                 FAssetRegistryModule::AssetCreated (Texture);
@@ -63,16 +67,9 @@ namespace MineAssetCreateHelperInternal
                 FString &&PackageFileName = FPackageName::LongPackageNameToFilename (CurrentChunkOuterPackageName);
 
                 // Save!!
-                UPackage::Save (TexturePackage,
-                    Texture,
-                    EObjectFlags::RF_Public | ::RF_Standalone,
-                    *PackageFileName,
-                    GError,
-                    nullptr,
-                    true,
-                    true,
-                    SAVE_Async | SAVE_NoError
-                );
+                TArray<UObject*>&& ObjectsNeedToSave = TArray<UObject*> ();
+                SavePackageHelper(TexturePackage, PackageFileName, EObjectFlags::RF_Public | ::RF_Standalone, GError);
+
             };
 
             // Find Color in each pixel
@@ -84,7 +81,7 @@ namespace MineAssetCreateHelperInternal
                     ++LTile_Udim_Index;
                     int32 const VT_TitleIndex = TileWidthIndex + TileHeightIndex;
                     int32 const ChunkIndex = PlatformData->VTData->GetChunkIndex (VT_TitleIndex);
-                    const FVirtualTextureDataChunk &CurrentChunkData = VT_DataChunks[ChunkIndex];
+                    const auto &CurrentChunkData = VT_DataChunks[ChunkIndex];
 
                     // Read TextureData from current VT chunk
                     const uint8 *TextureDataRawArray= 
@@ -211,7 +208,9 @@ namespace MineAssetCreateHelperInternal
             FString &&PackageFileName = FPackageName::LongPackageNameToFilename (LongPackageName);
 
             // Save!!
-            UPackage::Save (TexturePackage,
+            SavePackageHelper(TexturePackage, PackageFileName, EObjectFlags::RF_Public | ::RF_Standalone, GError);
+
+            /*UPackage::Save (TexturePackage,
                 Texture,
                 EObjectFlags::RF_Public | ::RF_Standalone,
                 *PackageFileName,
@@ -220,7 +219,7 @@ namespace MineAssetCreateHelperInternal
                 true,
                 true,
                 SAVE_Async | SAVE_NoError
-            );
+            );*/
             return Texture;
 
         }

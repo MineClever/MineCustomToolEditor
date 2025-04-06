@@ -79,7 +79,7 @@ public:
 template <class TAsset>
 void TAssetsProcessorFormSelection_Builder<TAsset>::ProcessAssets (TArray<TAsset *> &Assets)
 {
-	UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Not Found Specialization Of Class % "), *(Assets.Last ()->GetClass ()->GetName ()));
+	UE_LOG (LogMineCustomToolEditor, Warning, TEXT ("Not Found Specialization Of Class %s "), *(Assets.Last()->GetClass()->GetName()));
 }
 
 
@@ -113,8 +113,11 @@ namespace AssetsProcessorCastHelper
 		bool bCanCastType = false;
 		for (auto AssetIt = SelectedAssets.CreateConstIterator (); AssetIt; ++AssetIt) {
 			const FAssetData &Asset = *AssetIt;
-			if (bCanCast) bCanCastType = Cast<T> (Asset.GetAsset ()) != nullptr;
-			bCurrentType = bCurrentType || (Asset.AssetClass == T::StaticClass ()->GetFName ()) || bCanCastType;
+			if (bCanCast)
+			{
+				bCanCastType = Cast<T> (Asset.GetAsset ()) != nullptr;
+			}
+			bCurrentType = bCurrentType || (Asset.GetClass()->StaticClass() == T::StaticClass()) || bCanCastType;
 		}
 		return bCurrentType;
 	}
